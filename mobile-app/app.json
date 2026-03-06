@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "WasteMgmt",
+    "slug": "waste-mgmt",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#22c55e"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow WasteMgmt to access your camera."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow WasteMgmt to access your photos."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow WasteMgmt to access your location."
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#22c55e"
+      },
+      "package": "com.wastemgmt.app"
+    },
+    "ios": {
+      "bundleIdentifier": "com.wastemgmt.app",
+      "supportsTablet": false
+    }
+  }
+}
