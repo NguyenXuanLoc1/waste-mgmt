@@ -11,6 +11,16 @@ import { Button, Input, COLORS, Card } from '../../components/UI';
 const CATEGORIES = ['organic', 'recyclable', 'hazardous', 'other'];
 const CATEGORY_ICONS = { organic: '🌿', recyclable: '♻️', hazardous: '☢️', other: '🗑️' };
 
+// HÀM HIỂN THỊ THÔNG BÁO HOẠT ĐỘNG CHO CẢ WEB LẪN MOBILE
+const showNotification = (title, message, onOk = null) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+    if (onOk) onOk();
+  } else {
+    Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]);
+  }
+};
+
 export default function SubmitReportScreen({ navigation }) {
   const [photo, setPhoto] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
@@ -21,7 +31,6 @@ export default function SubmitReportScreen({ navigation }) {
 
   const pickPhoto = async () => {
     if (Platform.OS === 'web') {
-      // Trên web dùng input file trực tiếp
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
@@ -36,7 +45,7 @@ export default function SubmitReportScreen({ navigation }) {
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return Alert.alert('Permission denied');
+    if (!perm.granted) return showNotification('Lỗi', 'Cần cấp quyền truy cập thư viện ảnh');
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
@@ -52,7 +61,7 @@ export default function SubmitReportScreen({ navigation }) {
       return;
     }
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) return Alert.alert('Camera permission denied');
+    if (!perm.granted) return showNotification('Lỗi', 'Cần cấp quyền sử dụng camera');
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.7,
       allowsEditing: true,
@@ -67,30 +76,30 @@ export default function SubmitReportScreen({ navigation }) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-            Alert.alert('✅ Location captured');
+            showNotification('Thành công', 'Đã lấy được vị trí của bạn!');
           },
           () => {
-            // Dùng tọa độ mặc định nếu bị từ chối
             setLocation({ latitude: 10.7769, longitude: 106.7009 });
-            Alert.alert('✅ Default location set', 'TP.HCM coordinates used');
+            showNotification('Vị trí mặc định', 'Không thể lấy vị trí thật, đang dùng vị trí giả lập tại TP.HCM');
           }
         );
       } else {
         setLocation({ latitude: 10.7769, longitude: 106.7009 });
-        Alert.alert('✅ Default location set');
+        showNotification('Thông báo', 'Trình duyệt không hỗ trợ lấy vị trí');
       }
       return;
     }
     const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return Alert.alert('Location permission denied');
+    if (status !== 'granted') return showNotification('Lỗi', 'Không có quyền truy cập vị trí');
     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
     setLocation(loc.coords);
   };
 
   const handleSubmit = async () => {
-    if (!photo) return Alert.alert('Error', 'Please add a photo');
-    if (!category) return Alert.alert('Error', 'Please select a waste category');
-    if (!location) return Alert.alert('Error', 'Please capture your location');
+    // KIỂM TRA THÔNG TIN TRƯỚC KHI GỬI
+    if (!photo) return showNotification('Lỗi ❌', 'Vui lòng chọn hoặc chụp một tấm ảnh rác!');
+    if (!category) return showNotification('Lỗi ❌', 'Vui lòng chọn phân loại rác!');
+    if (!location) return showNotification('Lỗi 📍', 'Vui lòng bấm lấy vị trí GPS!');
 
     setLoading(true);
     try {
@@ -111,12 +120,18 @@ export default function SubmitReportScreen({ navigation }) {
       fd.append('longitude', String(location.longitude));
       fd.append('description', description);
 
+      // Gửi API
       await submitReport(fd);
-      Alert.alert('✅ Report submitted!', 'Thank you! Your report is under review.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      
+      // HIỆN THÔNG BÁO VÀ QUAY VỀ TRANG CHỦ
+      showNotification(
+        'Thành công! 🎉', 
+        'Báo cáo của bạn đã được gửi. AI đang âm thầm phân tích, kết quả sẽ có trong vài giây!', 
+        () => navigation.goBack()
+      );
+      
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Failed to submit report');
+      showNotification('Lỗi gửi báo cáo', err.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -196,7 +211,7 @@ export default function SubmitReportScreen({ navigation }) {
         />
       </Card>
 
-      <Button title="Submit Report" onPress={handleSubmit} loading={loading} style={{ marginTop: 8 }} />
+      <Button title="🚀 Submit Report" onPress={handleSubmit} loading={loading} style={{ marginTop: 8 }} />
     </ScrollView>
   );
 }
