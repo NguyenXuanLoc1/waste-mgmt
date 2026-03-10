@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { getMyScore } from '../../services/api';
-import { Card, COLORS, SectionTitle, Badge } from '../../components/UI';
+import { Card, COLORS, SectionTitle } from '../../components/UI';
 
 function ScoreMeter({ score }) {
   const pct = Math.min(Math.max(score, 0), 200) / 200;
@@ -83,10 +83,8 @@ export default function CitizenDashboard({ navigation }) {
         </View>
       )}
 
-      {/* ── Quick Actions ── */}
+      {/* Actions */}
       <SectionTitle>Quick Actions</SectionTitle>
-
-      {/* Row 1 — existing buttons */}
       <View style={styles.actions}>
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: COLORS.primary }]}
@@ -103,25 +101,6 @@ export default function CitizenDashboard({ navigation }) {
           <Text style={styles.actionText}>My Reports</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Row 2 — new buttons */}
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.actionCard, { backgroundColor: '#8b5cf6' }]}
-          onPress={() => navigation.navigate('WasteSortingGuide')}
-        >
-          <Text style={styles.actionIcon}>♻️</Text>
-          <Text style={styles.actionText}>Waste Sorting Guide</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionCard, { backgroundColor: '#f97316' }]}
-          onPress={() => navigation.navigate('Regulations')}
-        >
-          <Text style={styles.actionIcon}>📢</Text>
-          <Text style={styles.actionText}>Regulations & Announcements</Text>
-        </TouchableOpacity>
-      </View>
-
     </ScrollView>
   );
 }
@@ -131,8 +110,15 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, marginBottom: 16 },
   greeting: { fontSize: 22, fontWeight: '800', color: COLORS.dark },
   role: { fontSize: 13, color: COLORS.gray },
-  logoutBtn: { padding: 8 },
-  logoutText: { color: COLORS.danger, fontWeight: '600' },
+  // ✅ Nút Logout đỏ giống Admin
+  logoutBtn: {
+    backgroundColor: COLORS.danger,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  logoutText: { color: '#fff', fontWeight: '700' },
   meterCard: { alignItems: 'center', padding: 24 },
   meterLabel: { fontSize: 14, color: COLORS.gray, marginBottom: 4 },
   meterScore: { fontSize: 56, fontWeight: '900' },
@@ -146,11 +132,11 @@ const styles = StyleSheet.create({
   statCard: { flex: 1, alignItems: 'center', padding: 12 },
   statNum: { fontSize: 24, fontWeight: '800' },
   statLabel: { fontSize: 11, color: COLORS.gray, marginTop: 2 },
-  actions: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  actions: { flexDirection: 'row', gap: 12, marginBottom: 24 },
   actionCard: {
     flex: 1, borderRadius: 12, padding: 20, alignItems: 'center',
     shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, elevation: 3,
   },
   actionIcon: { fontSize: 32 },
-  actionText: { color: '#fff', fontWeight: '700', marginTop: 8, fontSize: 14, textAlign: 'center' },
+  actionText: { color: '#fff', fontWeight: '700', marginTop: 8, fontSize: 14 },
 });
