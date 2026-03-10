@@ -9,9 +9,13 @@ const wasteReportSchema = new mongoose.Schema(
     },
     photoUrl: { type: String, required: true },
     wasteCategory: {
-      type: String,
+      type: [String],
       enum: ['organic', 'recyclable', 'hazardous', 'other'],
       required: true,
+      validate: {
+        validator: (arr) => arr.length > 0,
+        message: 'At least one waste category is required',
+      },
     },
     location: {
       latitude: { type: Number, required: true },

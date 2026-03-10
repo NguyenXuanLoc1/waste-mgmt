@@ -18,9 +18,17 @@ router.post(
   upload.single('photo'),
   async (req, res) => {
     try {
-      const { wasteCategory, latitude, longitude, address, description } = req.body;
+      const { wasteCategory: wasteCategoryRaw, latitude, longitude, address, description } = req.body;
+
       if (!req.file) return res.status(400).json({ message: 'Photo is required' });
-      if (!wasteCategory || !latitude || !longitude)
+
+      // Parse "organic,recyclable" → ['organic', 'recyclable']
+      // Cũng xử lý được giá trị đơn như "other" → ['other']
+      const wasteCategory = wasteCategoryRaw
+        ? wasteCategoryRaw.split(',').map((c) => c.trim()).filter(Boolean)
+        : [];
+
+      if (!wasteCategory.length || !latitude || !longitude)
         return res.status(400).json({ message: 'Category and location required' });
 
       const photoUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
@@ -47,7 +55,7 @@ router.post(
           const base64Image = fs.readFileSync(filePath, { encoding: 'base64' });
 
           const prompt = `Bạn là chuyên gia phân loại rác thải. Hãy phân tích ảnh này.
-          Loại rác khai báo: "${wasteCategory}".
+          Loại rác khai báo: "${wasteCategory.join(', ')}".
           1. Xác định ảnh có rác hay không (isFake). Nếu ảnh phong cảnh/người/không có rác -> isFake: true.
           2. Loại rác (organic, recyclable, hazardous, other).
           3. Đánh giá xem CÓ THỂ TÁI CHẾ ĐƯỢC KHÔNG.

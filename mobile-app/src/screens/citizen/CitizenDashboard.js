@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { getMyScore } from '../../services/api';
-import { Card, COLORS, SectionTitle, Badge } from '../../components/UI';
+import { Card, COLORS, SectionTitle } from '../../components/UI';
 
 function ScoreMeter({ score }) {
   const pct = Math.min(Math.max(score, 0), 200) / 200;
@@ -110,8 +110,15 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, marginBottom: 16 },
   greeting: { fontSize: 22, fontWeight: '800', color: COLORS.dark },
   role: { fontSize: 13, color: COLORS.gray },
-  logoutBtn: { padding: 8 },
-  logoutText: { color: COLORS.danger, fontWeight: '600' },
+  // ✅ Nút Logout đỏ giống Admin
+  logoutBtn: {
+    backgroundColor: COLORS.danger,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  logoutText: { color: '#fff', fontWeight: '700' },
   meterCard: { alignItems: 'center', padding: 24 },
   meterLabel: { fontSize: 14, color: COLORS.gray, marginBottom: 4 },
   meterScore: { fontSize: 56, fontWeight: '900' },

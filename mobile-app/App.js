@@ -14,6 +14,8 @@ import RegisterScreen from './src/screens/auth/RegisterScreen';
 import CitizenDashboard from './src/screens/citizen/CitizenDashboard';
 import SubmitReportScreen from './src/screens/citizen/SubmitReportScreen';
 import MyReportsScreen from './src/screens/citizen/MyReportsScreen';
+import WasteSortingGuideScreen from './src/screens/citizen/WasteSortingGuideScreen';
+import RegulationsScreen from './src/screens/citizen/RegulationsScreen';
 
 // Collector screens
 import CollectorDashboard from './src/screens/collector/CollectorDashboard';
@@ -60,6 +62,8 @@ function RoleNavigator() {
         <Stack.Screen name="CitizenDashboard" component={CitizenDashboard} options={{ title: '♻️ WasteMgmt' }} />
         <Stack.Screen name="SubmitReport" component={SubmitReportScreen} options={{ title: 'Submit Report' }} />
         <Stack.Screen name="MyReports" component={MyReportsScreen} options={{ title: 'My Reports' }} />
+        <Stack.Screen name="WasteSortingGuide" component={WasteSortingGuideScreen} options={{ title: '♻️ Waste Sorting Guide' }} />
+        <Stack.Screen name="Regulations" component={RegulationsScreen} options={{ title: '📢 Regulations & Announcements' }} />
       </Stack.Navigator>
     );
   }
