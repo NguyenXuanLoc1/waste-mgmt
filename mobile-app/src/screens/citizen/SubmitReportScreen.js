@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Alert,
-  Image, TouchableOpacity, Platform,
+  View, Text, StyleSheet, ScrollView,
+  Image, TouchableOpacity, Platform, Modal, ActivityIndicator,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -11,69 +11,61 @@ import { Button, Input, COLORS, Card } from '../../components/UI';
 const CATEGORIES = ['organic', 'recyclable', 'hazardous', 'other'];
 const CATEGORY_ICONS = { organic: '🌿', recyclable: '♻️', hazardous: '☢️', other: '🗑️' };
 
-// Categories that support multi-selection together
-const MULTI_SELECTABLE = ['organic', 'recyclable', 'hazardous'];
+// ── Success Modal ────────────────────────────────────────────────────────────
+function SuccessModal({ visible, onOk }) {
+  return (
+    <Modal transparent animationType="fade" visible={visible}>
+      <View style={modal.overlay}>
+        <View style={modal.card}>
+          <Text style={modal.icon}>🎉</Text>
+          <Text style={modal.title}>Report Submitted!</Text>
+          <Text style={modal.body}>
+            Your report has been sent successfully.{'\n'}
+            AI is analyzing your photo — results will appear shortly.
+          </Text>
+          <TouchableOpacity style={modal.btn} onPress={onOk} activeOpacity={0.85}>
+            <Text style={modal.btnText}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
-// HÀM HIỂN THỊ THÔNG BÁO HOẠT ĐỘNG CHO CẢ WEB LẪN MOBILE
-const showNotification = (title, message, onOk = null) => {
-  if (Platform.OS === 'web') {
-    window.alert(`${title}\n\n${message}`);
-    if (onOk) onOk();
-  } else {
-    Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]);
-  }
-};
+// ── Error Modal ──────────────────────────────────────────────────────────────
+function ErrorModal({ visible, message, onClose }) {
+  return (
+    <Modal transparent animationType="fade" visible={visible}>
+      <View style={modal.overlay}>
+        <View style={modal.card}>
+          <Text style={modal.icon}>❌</Text>
+          <Text style={[modal.title, { color: COLORS.danger }]}>Oops!</Text>
+          <Text style={modal.body}>{message}</Text>
+          <TouchableOpacity style={[modal.btn, { backgroundColor: COLORS.danger }]} onPress={onClose} activeOpacity={0.85}>
+            <Text style={modal.btnText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
+// ── Main Screen ──────────────────────────────────────────────────────────────
 export default function SubmitReportScreen({ navigation }) {
-  const [photo, setPhoto] = useState(null);
+  const [photo, setPhoto]       = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
-
-  // ── CHANGED: was `category` (string), now `selectedCategories` (array) ──
-  const [selectedCategories, setSelectedCategories] = useState([]);
-
+  const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]   = useState(false);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // CATEGORY SELECTION HANDLER
-  //
-  // Rules:
-  //   1. organic / recyclable / hazardous  →  multi-selectable together
-  //   2. Tapping "other"                   →  clears all others, selects only "other"
-  //   3. Tapping organic/recyclable/hazardous while "other" is active
-  //                                        →  deselects "other", adds the tapped one
-  //   4. Tapping an already-selected item  →  deselects it (toggle off)
-  // ─────────────────────────────────────────────────────────────────────────
-  const handleCategoryToggle = (tapped) => {
-    setSelectedCategories((prev) => {
-      const isAlreadySelected = prev.includes(tapped);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError]     = useState(false);
+  const [errorMsg, setErrorMsg]       = useState('');
 
-      // Tap on "other"
-      if (tapped === 'other') {
-        // Toggle off if already selected
-        if (isAlreadySelected) return [];
-        // Otherwise clear everything and select only "other"
-        return ['other'];
-      }
+  const showErr = (msg) => { setErrorMsg(msg); setShowError(true); };
 
-      // Tap on organic / recyclable / hazardous
-      if (isAlreadySelected) {
-        // Toggle it off
-        return prev.filter((c) => c !== tapped);
-      } else {
-        // Remove "other" if it was active, then add the new selection
-        const withoutOther = prev.filter((c) => c !== 'other');
-        return [...withoutOther, tapped];
-      }
-    });
-  };
-
-  const isCategorySelected = (cat) => selectedCategories.includes(cat);
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // PHOTO HANDLERS (unchanged)
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Photo Picker ─────────────────────────────────────────────────────────
   const pickPhoto = async () => {
     if (Platform.OS === 'web') {
       const input = document.createElement('input');
@@ -90,7 +82,7 @@ export default function SubmitReportScreen({ navigation }) {
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return showNotification('Lỗi', 'Cần cấp quyền truy cập thư viện ảnh');
+    if (!perm.granted) return showErr('Gallery permission is required.');
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
@@ -103,63 +95,41 @@ export default function SubmitReportScreen({ navigation }) {
   const takePhoto = async () => {
     if (Platform.OS === 'web') { pickPhoto(); return; }
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) return showNotification('Lỗi', 'Cần cấp quyền sử dụng camera');
+    if (!perm.granted) return showErr('Camera permission is required.');
     const result = await ImagePicker.launchCameraAsync({
-      quality: 0.7,
-      allowsEditing: true,
-      aspect: [4, 3],
+      quality: 0.7, allowsEditing: true, aspect: [4, 3],
     });
     if (!result.canceled) setPhoto(result.assets[0]);
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // LOCATION HANDLER (unchanged)
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Location ─────────────────────────────────────────────────────────────
   const getLocation = async () => {
     if (Platform.OS === 'web') {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-            showNotification('Thành công', 'Đã lấy được vị trí của bạn!');
-          },
-          () => {
-            setLocation({ latitude: 10.7769, longitude: 106.7009 });
-            showNotification('Vị trí mặc định', 'Không thể lấy vị trí thật, đang dùng vị trí giả lập tại TP.HCM');
-          }
+          (pos) => setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+          ()    => setLocation({ latitude: 10.7769, longitude: 106.7009 })
         );
       } else {
         setLocation({ latitude: 10.7769, longitude: 106.7009 });
-        showNotification('Thông báo', 'Trình duyệt không hỗ trợ lấy vị trí');
       }
       return;
     }
     const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return showNotification('Lỗi', 'Không có quyền truy cập vị trí');
+    if (status !== 'granted') return showErr('Location permission is required.');
     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
     setLocation(loc.coords);
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // SUBMIT HANDLER
-  //
-  // CHANGED: sends `wasteCategory` as a comma-separated string so the existing
-  // backend endpoint receives a single field value it can read from req.body.
-  // Example: "organic,recyclable"  or just  "other"
-  //
-  // If your backend is updated to accept an array via JSON, switch the
-  // fd.append line to: fd.append('wasteCategory', JSON.stringify(selectedCategories))
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!photo) return showNotification('Lỗi ❌', 'Vui lòng chọn hoặc chụp một tấm ảnh rác!');
-    if (selectedCategories.length === 0)
-      return showNotification('Lỗi ❌', 'Vui lòng chọn ít nhất một phân loại rác!');
-    if (!location) return showNotification('Lỗi 📍', 'Vui lòng bấm lấy vị trí GPS!');
+    if (!photo)    return showErr('Please select or take a photo.');
+    if (!category) return showErr('Please select a waste category.');
+    if (!location) return showErr('Please capture your GPS location.');
 
     setLoading(true);
     try {
       const fd = new FormData();
-
       if (Platform.OS === 'web' && photoFile) {
         fd.append('photo', photoFile, photoFile.name);
       } else {
@@ -169,120 +139,84 @@ export default function SubmitReportScreen({ navigation }) {
           name: 'waste_report.jpg',
         });
       }
-
-      // ── CHANGED: join the array into a comma-separated string ──
-      // Backend receives e.g. "organic,recyclable" or "other"
-      fd.append('wasteCategory', selectedCategories.join(','));
-
-      fd.append('latitude', String(location.latitude));
-      fd.append('longitude', String(location.longitude));
+      fd.append('wasteCategory', category);
+      fd.append('latitude',    String(location.latitude));
+      fd.append('longitude',   String(location.longitude));
       fd.append('description', description);
 
       await submitReport(fd);
-
-      showNotification(
-        'Thành công! 🎉',
-        'Báo cáo của bạn đã được gửi. AI đang âm thầm phân tích, kết quả sẽ có trong vài giây!',
-        () => navigation.goBack()
-      );
-
+      setShowSuccess(true);
     } catch (err) {
-      showNotification('Lỗi gửi báo cáo', err.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+      showErr(err.response?.data?.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────────────────
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       <Text style={styles.title}>New Waste Report</Text>
 
-      {/* ── Photo Section (unchanged) ── */}
+      {/* ── Photo Section ── */}
       <Card>
         <Text style={styles.sectionLabel}>📷 Photo</Text>
+
         {photo ? (
-          <Image source={{ uri: photo.uri }} style={styles.preview} />
+          <Image
+            source={{ uri: photo.uri }}
+            style={styles.preview}
+            resizeMode="contain"
+          />
         ) : (
           <View style={styles.photoPlaceholder}>
+            <Text style={styles.placeholderIcon}>📷</Text>
             <Text style={styles.placeholderText}>No photo selected</Text>
+            <Text style={styles.placeholderSub}>Tap Camera or Gallery below</Text>
           </View>
         )}
-        <View style={styles.photoActions}>
-          <TouchableOpacity style={[styles.photoBtn, { backgroundColor: COLORS.info }]} onPress={takePhoto}>
-            <Text style={styles.photoBtnText}>📸 Camera</Text>
+
+        {/* 2 nút thẳng hàng */}
+        <View style={styles.twoCol}>
+          <TouchableOpacity style={[styles.colBtn, { backgroundColor: COLORS.info }]} onPress={takePhoto}>
+            <Text style={styles.colBtnText}>📸 Camera</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.photoBtn, { backgroundColor: COLORS.gray }]} onPress={pickPhoto}>
-            <Text style={styles.photoBtnText}>🖼️ Gallery</Text>
+          <TouchableOpacity style={[styles.colBtn, { backgroundColor: '#6b7280' }]} onPress={pickPhoto}>
+            <Text style={styles.colBtnText}>🖼️ Gallery</Text>
           </TouchableOpacity>
         </View>
       </Card>
 
-      {/* ── Category — multi-select ── */}
+      {/* ── Category ── */}
       <Card>
         <Text style={styles.sectionLabel}>🗂️ Waste Category</Text>
-
-        {/* Hint text shows when 1+ items are selected */}
-        {selectedCategories.length > 0 && (
-          <Text style={styles.selectionHint}>
-            Selected:{' '}
-            {selectedCategories
-              .map((c) => c.charAt(0).toUpperCase() + c.slice(1))
-              .join(', ')}
-          </Text>
-        )}
-
-        <View style={styles.catGrid}>
-          {CATEGORIES.map((c) => {
-            const selected = isCategorySelected(c);
-            // "Other" chip gets a distinct locked style when multi-select is active
-            const isOtherLocked =
-              c === 'other' && selectedCategories.some((s) => MULTI_SELECTABLE.includes(s));
-
-            return (
-              <TouchableOpacity
-                key={c}
-                style={[
-                  styles.catChip,
-                  selected && styles.catChipActive,
-                  isOtherLocked && styles.catChipLocked,
-                ]}
-                onPress={() => handleCategoryToggle(c)}
-                activeOpacity={0.75}
-              >
-                {/* Checkmark badge on selected chips */}
-                {selected && (
-                  <View style={styles.checkBadge}>
-                    <Text style={styles.checkBadgeText}>✓</Text>
-                  </View>
-                )}
-                <Text style={styles.catIcon}>{CATEGORY_ICONS[c]}</Text>
-                <Text style={[styles.catLabel, selected && { color: COLORS.white }]}>
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
-                </Text>
-                {/* Small "exclusive" label under Other */}
-                {c === 'other' && (
-                  <Text style={[styles.catSubLabel, selected && { color: 'rgba(255,255,255,0.8)' }]}>
-                    exclusive
-                  </Text>
-                )}
-              </TouchableOpacity>
-            );
-          })}
+        {/* 4 nút thẳng hàng 2×2 */}
+        <View style={styles.twoCol}>
+          {CATEGORIES.map((c) => (
+            <TouchableOpacity
+              key={c}
+              style={[styles.catChip, category === c && styles.catChipActive]}
+              onPress={() => setCategory(c)}
+            >
+              <Text style={styles.catIcon}>{CATEGORY_ICONS[c]}</Text>
+              <Text style={[styles.catLabel, category === c && { color: COLORS.white }]}>
+                {c.charAt(0).toUpperCase() + c.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </Card>
 
-      {/* ── Location (unchanged) ── */}
+      {/* ── Location ── */}
       <Card>
         <Text style={styles.sectionLabel}>📍 Location</Text>
         {location ? (
-          <Text style={styles.locText}>
-            {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)} ✅
-          </Text>
+          <View style={styles.locBadge}>
+            <Text style={styles.locBadgeText}>
+              ✅ {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+            </Text>
+          </View>
         ) : (
-          <Text style={styles.locText}>No location captured yet</Text>
+          <Text style={styles.locEmpty}>No location captured yet</Text>
         )}
         <Button
           title={location ? '📍 Recapture Location' : '📍 Capture My Location'}
@@ -292,7 +226,7 @@ export default function SubmitReportScreen({ navigation }) {
         />
       </Card>
 
-      {/* ── Description (unchanged) ── */}
+      {/* ── Description ── */}
       <Card>
         <Text style={styles.sectionLabel}>📝 Description (optional)</Text>
         <Input
@@ -305,82 +239,139 @@ export default function SubmitReportScreen({ navigation }) {
         />
       </Card>
 
-      <Button title="🚀 Submit Report" onPress={handleSubmit} loading={loading} style={{ marginTop: 8 }} />
+      {/* ── Submit Button ── */}
+      <TouchableOpacity
+        style={[styles.submitBtn, loading && { opacity: 0.7 }]}
+        onPress={handleSubmit}
+        disabled={loading}
+        activeOpacity={0.85}
+      >
+        {loading
+          ? <ActivityIndicator color="#fff" />
+          : <Text style={styles.submitBtnText}>🚀 Submit Report</Text>
+        }
+      </TouchableOpacity>
+
+      {/* ── Modals ── */}
+      <SuccessModal
+        visible={showSuccess}
+        onOk={() => { setShowSuccess(false); navigation.goBack(); }}
+      />
+      <ErrorModal
+        visible={showError}
+        message={errorMsg}
+        onClose={() => setShowError(false)}
+      />
     </ScrollView>
   );
 }
 
+// ── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.light, padding: 16 },
-  title: { fontSize: 22, fontWeight: '800', color: COLORS.dark, marginBottom: 12 },
-  sectionLabel: { fontWeight: '700', color: COLORS.dark, marginBottom: 6, fontSize: 14 },
+  container:    { flex: 1, backgroundColor: COLORS.light, padding: 16 },
+  title:        { fontSize: 22, fontWeight: '800', color: COLORS.dark, marginBottom: 12 },
+  sectionLabel: { fontWeight: '700', color: COLORS.dark, marginBottom: 10, fontSize: 14 },
 
-  // ── Selection hint ──
-  selectionHint: {
-    fontSize: 12,
-    color: COLORS.primary,
-    fontWeight: '600',
-    marginBottom: 10,
-    paddingHorizontal: 2,
+  // Photo
+  preview: {
+    width: '100%',
+    height: 280,
+    borderRadius: 10,
+    marginBottom: 12,
+    backgroundColor: '#f3f4f6',
   },
-
-  // ── Photo ──
-  preview: { width: '100%', height: 200, borderRadius: 10, marginBottom: 10 },
   photoPlaceholder: {
-    width: '100%', height: 150, borderRadius: 10, backgroundColor: COLORS.light,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 10,
+    width: '100%', height: 200, borderRadius: 10,
+    backgroundColor: COLORS.light, alignItems: 'center',
+    justifyContent: 'center', marginBottom: 12,
     borderWidth: 2, borderColor: COLORS.border, borderStyle: 'dashed',
   },
-  placeholderText: { color: COLORS.gray },
-  photoActions: { flexDirection: 'row', gap: 10 },
-  photoBtn: { flex: 1, padding: 10, borderRadius: 8, alignItems: 'center' },
-  photoBtnText: { color: '#fff', fontWeight: '600' },
+  placeholderIcon: { fontSize: 36, marginBottom: 8 },
+  placeholderText: { color: COLORS.dark, fontWeight: '600', fontSize: 14 },
+  placeholderSub:  { color: COLORS.gray, fontSize: 12, marginTop: 4 },
 
-  // ── Category grid ──
-  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  // Shared 2-column layout
+  twoCol: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  colBtn: {
+    flex: 1,
+    minWidth: '45%',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  colBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 
+  // Category chips (same twoCol layout)
   catChip: {
-    width: '47%',
-    padding: 14,
+    flex: 1,
+    minWidth: '45%',
+    padding: 16,
     borderRadius: 10,
     alignItems: 'center',
     backgroundColor: COLORS.light,
     borderWidth: 2,
     borderColor: COLORS.border,
-    // Relative positioning enables the checkmark badge
-    position: 'relative',
   },
+  catChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  catIcon:  { fontSize: 26 },
+  catLabel: { marginTop: 6, fontWeight: '600', color: COLORS.dark, fontSize: 13 },
 
-  // Active (selected) state — same green as original
-  catChipActive: {
+  // Location
+  locBadge: {
+    backgroundColor: '#f0fdf4', borderRadius: 8,
+    padding: 10, marginBottom: 4,
+    borderWidth: 1, borderColor: '#bbf7d0',
+  },
+  locBadgeText: { color: '#16a34a', fontWeight: '600', fontSize: 13 },
+  locEmpty:     { color: COLORS.gray, fontSize: 13, marginBottom: 4 },
+
+  // Submit
+  submitBtn: {
     backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-
-  // "Other" when multi-selectable items are already active — slightly dimmed
-  catChipLocked: {
-    opacity: 0.45,
-    borderStyle: 'dashed',
-  },
-
-  // Small ✓ badge in top-right corner of selected chip
-  checkBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 8,
-    backgroundColor: 'rgba(255,255,255,0.35)',
-    borderRadius: 99,
-    width: 18,
-    height: 18,
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: 8,
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  checkBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
+  submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+});
 
-  catIcon: { fontSize: 24 },
-  catLabel: { marginTop: 4, fontWeight: '600', color: COLORS.dark, fontSize: 13 },
-  catSubLabel: { fontSize: 10, color: COLORS.gray, marginTop: 2 },
-
-  // ── Location ──
-  locText: { color: COLORS.gray, fontSize: 13, marginBottom: 4 },
+const modal = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  icon:  { fontSize: 56, marginBottom: 12 },
+  title: { fontSize: 22, fontWeight: '800', color: COLORS.dark, marginBottom: 10 },
+  body:  { fontSize: 14, color: COLORS.gray, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  btn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+  },
+  btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });
