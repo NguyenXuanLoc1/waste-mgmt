@@ -83,8 +83,10 @@ export default function CitizenDashboard({ navigation }) {
         </View>
       )}
 
-      {/* Actions */}
+      {/* ── Quick Actions ── */}
       <SectionTitle>Quick Actions</SectionTitle>
+
+      {/* Row 1 — existing buttons */}
       <View style={styles.actions}>
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: COLORS.primary }]}
@@ -101,6 +103,25 @@ export default function CitizenDashboard({ navigation }) {
           <Text style={styles.actionText}>My Reports</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Row 2 — new buttons */}
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={[styles.actionCard, { backgroundColor: '#8b5cf6' }]}
+          onPress={() => navigation.navigate('WasteSortingGuide')}
+        >
+          <Text style={styles.actionIcon}>♻️</Text>
+          <Text style={styles.actionText}>Waste Sorting Guide</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionCard, { backgroundColor: '#f97316' }]}
+          onPress={() => navigation.navigate('Regulations')}
+        >
+          <Text style={styles.actionIcon}>📢</Text>
+          <Text style={styles.actionText}>Regulations & Announcements</Text>
+        </TouchableOpacity>
+      </View>
+
     </ScrollView>
   );
 }
@@ -125,11 +146,11 @@ const styles = StyleSheet.create({
   statCard: { flex: 1, alignItems: 'center', padding: 12 },
   statNum: { fontSize: 24, fontWeight: '800' },
   statLabel: { fontSize: 11, color: COLORS.gray, marginTop: 2 },
-  actions: { flexDirection: 'row', gap: 12, marginBottom: 24 },
+  actions: { flexDirection: 'row', gap: 12, marginBottom: 12 },
   actionCard: {
     flex: 1, borderRadius: 12, padding: 20, alignItems: 'center',
     shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, elevation: 3,
   },
   actionIcon: { fontSize: 32 },
-  actionText: { color: '#fff', fontWeight: '700', marginTop: 8, fontSize: 14 },
+  actionText: { color: '#fff', fontWeight: '700', marginTop: 8, fontSize: 14, textAlign: 'center' },
 });
