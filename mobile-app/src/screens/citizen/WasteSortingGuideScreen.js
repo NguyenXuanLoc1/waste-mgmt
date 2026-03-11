@@ -103,12 +103,12 @@ function GuideCard({ item }) {
 }
 
 // =========================================================
-// 🎥 PHẦN VIDEO FORM BẠN THÍCH - TRỊ TẬN GỐC LỖI TEO NHỎ
+// 🎥 PHẦN VIDEO: CĂN GIỮA, ĐẦY ĐỦ VIDEO, KHUNG 3 PHẦN
 // =========================================================
 function GuideVideoPlayer() {
   const videoRef = useRef(null);
 
-  // Phím tắt F
+  // Phím tắt F: Phóng to thu nhỏ
   useEffect(() => {
     if (Platform.OS !== 'web') return; 
     const handleKeyPress = async (event) => {
@@ -120,7 +120,9 @@ function GuideVideoPlayer() {
           } else {
             await videoRef.current.presentFullscreenPlayer();
           }
-        } catch (e) {}
+        } catch (e) {
+          console.log("Fullscreen toggle error:", e);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyPress);
@@ -129,24 +131,26 @@ function GuideVideoPlayer() {
 
   return (
     <View style={styles.videoCard}>
-      {/* 1. Header */}
+      {/* Khúc 1: Header xám */}
       <View style={styles.videoHeader}>
         <Text style={styles.videoTitle}>🎥 Video Hướng Dẫn</Text>
       </View>
       
-      {/* 2. Khung Video chuẩn chỉnh */}
-      <View style={styles.videoContainer}>
-        <Video
-          ref={videoRef}
-          style={styles.videoPlayer} // <-- Ép width 100%, height 100% ở đây
-          source={require('../../../assets/waste-sorting.mp4')} 
-          useNativeControls={true} 
-          resizeMode="contain" // <-- Giữ nguyên hình ảnh, không cắt xén
-          isLooping={false}
-        />
+      {/* Khúc 2: Vùng chứa Video (Nền đen, Căn giữa) */}
+      <View style={styles.videoCenterContainer}>
+        <View style={styles.videoWrapper}>
+          <Video
+            ref={videoRef}
+            style={styles.videoPlayer}
+            source={require('../../../assets/waste-sorting.mp4')} 
+            useNativeControls={true} // Bật thanh điều khiển Youtube
+            resizeMode="contain"     // GIỮ ĐẦY ĐỦ 100% VIDEO KHÔNG BỊ CẮT
+            isLooping={false}
+          />
+        </View>
       </View>
 
-      {/* 3. Footer có chú thích */}
+      {/* Khúc 3: Footer xám trải dài */}
       <View style={styles.videoFooter}>
         <Text style={styles.videoCaption}>
           Xem đoạn hoạt hình ngắn này để biết cách phân loại 3 loại rác cơ bản nhé!
@@ -159,6 +163,7 @@ function GuideVideoPlayer() {
 export default function WasteSortingGuideScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+
       {/* Banner */}
       <View style={styles.banner}>
         <Text style={styles.bannerIcon}>♻️</Text>
@@ -168,7 +173,7 @@ export default function WasteSortingGuideScreen() {
         </Text>
       </View>
 
-      {/* Lời nhắc */}
+      {/* Score reminder */}
       <View style={styles.reminderBox}>
         <Text style={styles.reminderText}>
           🌟 Correctly sorting your waste improves your Behavior Score and reduces your collection fee!
@@ -221,7 +226,7 @@ const styles = StyleSheet.create({
   reminderText: { fontSize: 13, color: '#92400e', lineHeight: 19 },
 
   // ===============================================
-  // STYLE CHO FORM VIDEO (ĐÃ FIX LỖI TEO NHỎ TRÊN WEB)
+  // STYLE CHO FORM VIDEO (KHÔNG BỊ LỆCH GÓC NỮA)
   // ===============================================
   videoCard: {
     backgroundColor: '#fff',
@@ -230,11 +235,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     marginBottom: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-    overflow: 'hidden', // Gọt giũa 4 góc
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    overflow: 'hidden', // Gọt 4 góc
   },
   videoHeader: {
     padding: 16,
@@ -248,14 +253,22 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: COLORS.dark,
   },
-  videoContainer: {
-    width: '100%',         // Container chiếm toàn bộ chiều ngang của Card
-    aspectRatio: 16 / 9,   // Giữ khung hình chữ nhật chuẩn
-    backgroundColor: '#000', // Đáy đen 
+  videoCenterContainer: {
+    width: '100%',
+    backgroundColor: '#000', // Đáy đen bao phủ toàn bộ chiều ngang
+    alignItems: 'center',    // ÉP KHUNG VIDEO VÀO CHÍNH GIỮA
+    justifyContent: 'center',
+  },
+  videoWrapper: {
+    width: '100%',
+    maxWidth: 800,           // Không cho video to quá lố trên Desktop
+    aspectRatio: 16 / 9,     // Tỷ lệ khung hình 16:9
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   videoPlayer: {
-    width: '100%',         // Bắt buộc: Ép thẻ video bung hết 100% chiều ngang
-    height: '100%',        // Bắt buộc: Ép thẻ video bung hết 100% chiều dọc
+    width: '100%',
+    height: '100%', // Đảm bảo thẻ Video giãn hết cỡ trong Wrapper
   },
   videoFooter: {
     padding: 16,
