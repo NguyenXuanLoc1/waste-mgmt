@@ -46,13 +46,22 @@ export const verifyReport = (reportId)  => api.post('/collector/verify-report', 
 export const submitWeight = (data)      => api.post('/collector/submit-weight', data);
 
 // ── Admin ─────────────────────────────────────────────────────────────────
-export const getAllReports    = (params)              => api.get('/admin/all-reports', { params });
-export const getDashboardStats = ()                  => api.get('/admin/dashboard-stats');
-export const analyzeReport   = (reportId)            => api.post('/admin/analyze-report', { reportId });
-export const approveReport   = (reportId)            => api.post('/admin/approve-report', { reportId });
-export const rejectReport    = (reportId, reason)    => api.post('/admin/reject-report', { reportId, reason });
+export const getAllReports    = (params)                   => api.get('/admin/all-reports', { params });
+export const getDashboardStats = ()                       => api.get('/admin/dashboard-stats');
+export const analyzeReport   = (reportId)                 => api.post('/admin/analyze-report', { reportId });
+export const approveReport   = (reportId)                 => api.post('/admin/approve-report', { reportId });
+export const rejectReport    = (reportId, reason)         => api.post('/admin/reject-report', { reportId, reason });
 export const adjustScore     = (citizenId, delta, reason) => api.post('/admin/adjust-score', { citizenId, delta, reason });
-export const getCitizens     = ()                    => api.get('/admin/citizens');
-export const calculateFee    = (citizenId)           => api.post('/admin/calculate-fee', { citizenId });
+export const getCitizens     = ()                         => api.get('/admin/citizens');
+export const calculateFee    = (citizenId)                => api.post('/admin/calculate-fee', { citizenId });
+
+// ── Events ────────────────────────────────────────────────────────────────
+export const getEvents          = ()                         => api.get('/events');
+export const joinEvent          = (eventId)                  => api.post(`/events/${eventId}/join`);
+export const getAdminEvents     = ()                         => api.get('/events/admin/all');
+export const createEvent        = (data)                     => api.post('/events', data);
+export const confirmParticipant = (eventId, citizenId)       => api.post(`/events/${eventId}/confirm/${citizenId}`);
+export const deleteEvent        = (eventId)                  => api.delete(`/events/${eventId}`);
+export const markNotAttended    = (eventId, citizenId)       => api.post(`/events/${eventId}/not-attended/${citizenId}`);
 
 export default api;
