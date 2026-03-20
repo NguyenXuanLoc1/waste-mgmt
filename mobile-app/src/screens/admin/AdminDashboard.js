@@ -78,6 +78,7 @@ export default function AdminDashboard({ navigation }) {
         {[
           { icon: '📋', label: 'All Reports', screen: 'AdminReports' },
           { icon: '👥', label: 'Citizens', screen: 'AdminCitizens' },
+          { icon: '🎉', label: 'Sự kiện', screen: 'AdminEvents' },
         ].map((item) => (
           <TouchableOpacity
             key={item.screen}
@@ -98,7 +99,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   title: { fontSize: 22, fontWeight: '800', color: COLORS.dark },
   sub: { fontSize: 13, color: COLORS.gray },
-  logout: { color: COLORS.danger, fontWeight: '600' },
+  logout: {
+    color: '#fff',
+    fontWeight: '700',
+    backgroundColor: COLORS.danger, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, overflow: 'hidden',
+  },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.dark, marginVertical: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   statBox: { width: '47%', padding: 16 },

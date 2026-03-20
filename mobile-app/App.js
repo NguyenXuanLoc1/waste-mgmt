@@ -24,6 +24,7 @@ import CollectorDashboard from './src/screens/collector/CollectorDashboard';
 import AdminDashboard from './src/screens/admin/AdminDashboard';
 import AdminReports from './src/screens/admin/AdminReports';
 import AdminCitizens from './src/screens/admin/AdminCitizens';
+import AdminEvents from './src/screens/admin/AdminEvents';
 
 import { COLORS } from './src/components/UI';
 
@@ -121,6 +122,11 @@ function RoleNavigator() {
           name="AdminCitizens"
           component={AdminCitizens}
           options={{ title: 'Citizens' }}
+        />
+        <Stack.Screen
+          name="AdminEvents"
+          component={AdminEvents}
+          options={{ title: '🎉 Sự kiện' }}
         />
       </Stack.Navigator>
     );
