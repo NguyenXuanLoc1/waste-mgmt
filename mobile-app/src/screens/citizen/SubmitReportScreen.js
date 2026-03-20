@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import {
+<<<<<<< HEAD
   View, Text, StyleSheet, ScrollView, Alert,
   Image, TouchableOpacity, Platform, ActivityIndicator,
+=======
+  View, Text, StyleSheet, ScrollView,
+  Image, TouchableOpacity, Platform, Modal, ActivityIndicator,
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -11,6 +16,7 @@ import { Button, Input, COLORS, Card } from '../../components/UI';
 
 const CATEGORIES = ['organic', 'recyclable', 'hazardous', 'other'];
 const CATEGORY_ICONS = { organic: '🌿', recyclable: '♻️', hazardous: '☢️', other: '🗑️' };
+<<<<<<< HEAD
 const MULTI_SELECTABLE = ['organic', 'recyclable', 'hazardous'];
 
 const showNotification = (title, message, onOk = null) => {
@@ -21,8 +27,51 @@ const showNotification = (title, message, onOk = null) => {
     Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]);
   }
 };
+=======
 
+// ── Success Modal ────────────────────────────────────────────────────────────
+function SuccessModal({ visible, onOk }) {
+  return (
+    <Modal transparent animationType="fade" visible={visible}>
+      <View style={modal.overlay}>
+        <View style={modal.card}>
+          <Text style={modal.icon}>🎉</Text>
+          <Text style={modal.title}>Report Submitted!</Text>
+          <Text style={modal.body}>
+            Your report has been sent successfully.{'\n'}
+            AI is analyzing your photo — results will appear shortly.
+          </Text>
+          <TouchableOpacity style={modal.btn} onPress={onOk} activeOpacity={0.85}>
+            <Text style={modal.btnText}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ── Error Modal ──────────────────────────────────────────────────────────────
+function ErrorModal({ visible, message, onClose }) {
+  return (
+    <Modal transparent animationType="fade" visible={visible}>
+      <View style={modal.overlay}>
+        <View style={modal.card}>
+          <Text style={modal.icon}>❌</Text>
+          <Text style={[modal.title, { color: COLORS.danger }]}>Oops!</Text>
+          <Text style={modal.body}>{message}</Text>
+          <TouchableOpacity style={[modal.btn, { backgroundColor: COLORS.danger }]} onPress={onClose} activeOpacity={0.85}>
+            <Text style={modal.btnText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
+
+// ── Main Screen ──────────────────────────────────────────────────────────────
 export default function SubmitReportScreen({ navigation }) {
+<<<<<<< HEAD
   const { isGuest } = useAuth();
 
   // ── Common state ──────────────────────────────────────────────────────
@@ -57,6 +106,22 @@ export default function SubmitReportScreen({ navigation }) {
   };
 
   // ── Photo handlers ────────────────────────────────────────────────────
+=======
+  const [photo, setPhoto]       = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [category, setCategory] = useState('');
+  const [description, setDescription] = useState('');
+  const [location, setLocation] = useState(null);
+  const [loading, setLoading]   = useState(false);
+
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError]     = useState(false);
+  const [errorMsg, setErrorMsg]       = useState('');
+
+  const showErr = (msg) => { setErrorMsg(msg); setShowError(true); };
+
+  // ── Photo Picker ─────────────────────────────────────────────────────────
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
   const pickPhoto = async () => {
     if (Platform.OS === 'web') {
       const input = document.createElement('input');
@@ -68,26 +133,52 @@ export default function SubmitReportScreen({ navigation }) {
       input.click(); return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+<<<<<<< HEAD
     if (!perm.granted) return showNotification('Lỗi', 'Cần cấp quyền thư viện ảnh');
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, allowsEditing: true, aspect: [4, 3] });
+=======
+    if (!perm.granted) return showErr('Gallery permission is required.');
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
     if (!result.canceled) setPhoto(result.assets[0]);
   };
 
   const takePhoto = async () => {
     if (Platform.OS === 'web') { pickPhoto(); return; }
     const perm = await ImagePicker.requestCameraPermissionsAsync();
+<<<<<<< HEAD
     if (!perm.granted) return showNotification('Lỗi', 'Cần cấp quyền camera');
     const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
     if (!result.canceled) setPhoto(result.assets[0]);
   };
 
   // ── Location ──────────────────────────────────────────────────────────
+=======
+    if (!perm.granted) return showErr('Camera permission is required.');
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.7, allowsEditing: true, aspect: [4, 3],
+    });
+    if (!result.canceled) setPhoto(result.assets[0]);
+  };
+
+  // ── Location ─────────────────────────────────────────────────────────────
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
   const getLocation = async () => {
     if (Platform.OS === 'web') {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
+<<<<<<< HEAD
           (pos) => { setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }); showNotification('Thành công', 'Đã lấy được vị trí!'); },
           () => { setLocation({ latitude: 10.7769, longitude: 106.7009 }); showNotification('Vị trí mặc định', 'Dùng vị trí mặc định TP.HCM'); }
+=======
+          (pos) => setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+          ()    => setLocation({ latitude: 10.7769, longitude: 106.7009 })
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
         );
       } else {
         setLocation({ latitude: 10.7769, longitude: 106.7009 });
@@ -95,11 +186,16 @@ export default function SubmitReportScreen({ navigation }) {
       return;
     }
     const { status } = await Location.requestForegroundPermissionsAsync();
+<<<<<<< HEAD
     if (status !== 'granted') return showNotification('Lỗi', 'Không có quyền vị trí');
+=======
+    if (status !== 'granted') return showErr('Location permission is required.');
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
     setLocation(loc.coords);
   };
 
+<<<<<<< HEAD
   // ── OTP: Send ─────────────────────────────────────────────────────────
   const handleSendOtp = async () => {
     const contact = guestPhone.trim() || guestEmail.trim();
@@ -154,11 +250,17 @@ export default function SubmitReportScreen({ navigation }) {
       if (!isVerified)
         return showNotification('Lỗi 🔒', 'Vui lòng xác minh OTP trước khi gửi báo cáo.');
     }
+=======
+  // ── Submit ────────────────────────────────────────────────────────────────
+  const handleSubmit = async () => {
+    if (!photo)    return showErr('Please select or take a photo.');
+    if (!category) return showErr('Please select a waste category.');
+    if (!location) return showErr('Please capture your GPS location.');
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
 
     setLoading(true);
     try {
       const fd = new FormData();
-
       if (Platform.OS === 'web' && photoFile) {
         fd.append('photo', photoFile, photoFile.name);
       } else {
@@ -168,6 +270,7 @@ export default function SubmitReportScreen({ navigation }) {
           name: 'waste_report.jpg',
         });
       }
+<<<<<<< HEAD
 
       fd.append('wasteCategory', selectedCategories.join(','));
       fd.append('latitude', String(location.latitude));
@@ -189,23 +292,36 @@ export default function SubmitReportScreen({ navigation }) {
         'Báo cáo của bạn đã được gửi. AI đang phân tích, kết quả sẽ có trong vài giây!',
         () => navigation.goBack()
       );
+=======
+      fd.append('wasteCategory', category);
+      fd.append('latitude',    String(location.latitude));
+      fd.append('longitude',   String(location.longitude));
+      fd.append('description', description);
+
+      await submitReport(fd);
+      setShowSuccess(true);
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
     } catch (err) {
-      showNotification('Lỗi gửi báo cáo', err.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+      showErr(err.response?.data?.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+<<<<<<< HEAD
   // ── Submit button enabled logic ───────────────────────────────────────
   const canSubmit = isGuest ? isVerified : true;
 
   // ─────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────
+=======
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       <Text style={styles.title}>New Waste Report</Text>
 
+<<<<<<< HEAD
       {/* ── Guest banner ── */}
       {isGuest && (
         <View style={styles.guestNotice}>
@@ -216,28 +332,41 @@ export default function SubmitReportScreen({ navigation }) {
       )}
 
       {/* ── Photo ── */}
+=======
+      {/* ── Photo Section ── */}
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
       <Card>
         <Text style={styles.sectionLabel}>📷 Photo</Text>
+
         {photo ? (
-          <Image source={{ uri: photo.uri }} style={styles.preview} />
+          <Image
+            source={{ uri: photo.uri }}
+            style={styles.preview}
+            resizeMode="contain"
+          />
         ) : (
           <View style={styles.photoPlaceholder}>
+            <Text style={styles.placeholderIcon}>📷</Text>
             <Text style={styles.placeholderText}>No photo selected</Text>
+            <Text style={styles.placeholderSub}>Tap Camera or Gallery below</Text>
           </View>
         )}
-        <View style={styles.photoActions}>
-          <TouchableOpacity style={[styles.photoBtn, { backgroundColor: COLORS.info }]} onPress={takePhoto}>
-            <Text style={styles.photoBtnText}>📸 Camera</Text>
+
+        {/* 2 nút thẳng hàng */}
+        <View style={styles.twoCol}>
+          <TouchableOpacity style={[styles.colBtn, { backgroundColor: COLORS.info }]} onPress={takePhoto}>
+            <Text style={styles.colBtnText}>📸 Camera</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.photoBtn, { backgroundColor: COLORS.gray }]} onPress={pickPhoto}>
-            <Text style={styles.photoBtnText}>🖼️ Gallery</Text>
+          <TouchableOpacity style={[styles.colBtn, { backgroundColor: '#6b7280' }]} onPress={pickPhoto}>
+            <Text style={styles.colBtnText}>🖼️ Gallery</Text>
           </TouchableOpacity>
         </View>
       </Card>
 
-      {/* ── Category — multi-select ── */}
+      {/* ── Category ── */}
       <Card>
         <Text style={styles.sectionLabel}>🗂️ Waste Category</Text>
+<<<<<<< HEAD
         {selectedCategories.length > 0 && (
           <Text style={styles.selectionHint}>
             Selected: {selectedCategories.map((c) => c.charAt(0).toUpperCase() + c.slice(1)).join(', ')}
@@ -264,6 +393,22 @@ export default function SubmitReportScreen({ navigation }) {
               </TouchableOpacity>
             );
           })}
+=======
+        {/* 4 nút thẳng hàng 2×2 */}
+        <View style={styles.twoCol}>
+          {CATEGORIES.map((c) => (
+            <TouchableOpacity
+              key={c}
+              style={[styles.catChip, category === c && styles.catChipActive]}
+              onPress={() => setCategory(c)}
+            >
+              <Text style={styles.catIcon}>{CATEGORY_ICONS[c]}</Text>
+              <Text style={[styles.catLabel, category === c && { color: COLORS.white }]}>
+                {c.charAt(0).toUpperCase() + c.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
         </View>
       </Card>
 
@@ -271,9 +416,17 @@ export default function SubmitReportScreen({ navigation }) {
       <Card>
         <Text style={styles.sectionLabel}>📍 Location</Text>
         {location ? (
+<<<<<<< HEAD
           <Text style={styles.locText}>{location.latitude.toFixed(5)}, {location.longitude.toFixed(5)} ✅</Text>
+=======
+          <View style={styles.locBadge}>
+            <Text style={styles.locBadgeText}>
+              ✅ {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+            </Text>
+          </View>
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
         ) : (
-          <Text style={styles.locText}>No location captured yet</Text>
+          <Text style={styles.locEmpty}>No location captured yet</Text>
         )}
         <Button
           title={location ? '📍 Recapture Location' : '📍 Capture My Location'}
@@ -291,6 +444,7 @@ export default function SubmitReportScreen({ navigation }) {
         />
       </Card>
 
+<<<<<<< HEAD
       {/* ════════════════════════════════════════════════════════════════
           GUEST-ONLY SECTION — contact info + OTP verification
           ════════════════════════════════════════════════════════════════ */}
@@ -405,12 +559,38 @@ export default function SubmitReportScreen({ navigation }) {
         loading={loading}
         style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
         color={canSubmit ? COLORS.primary : COLORS.gray}
+=======
+      {/* ── Submit Button ── */}
+      <TouchableOpacity
+        style={[styles.submitBtn, loading && { opacity: 0.7 }]}
+        onPress={handleSubmit}
+        disabled={loading}
+        activeOpacity={0.85}
+      >
+        {loading
+          ? <ActivityIndicator color="#fff" />
+          : <Text style={styles.submitBtnText}>🚀 Submit Report</Text>
+        }
+      </TouchableOpacity>
+
+      {/* ── Modals ── */}
+      <SuccessModal
+        visible={showSuccess}
+        onOk={() => { setShowSuccess(false); navigation.goBack(); }}
+      />
+      <ErrorModal
+        visible={showError}
+        message={errorMsg}
+        onClose={() => setShowError(false)}
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
       />
     </ScrollView>
   );
 }
 
+// ── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+<<<<<<< HEAD
   container: { flex: 1, backgroundColor: COLORS.light, padding: 16 },
   title: { fontSize: 22, fontWeight: '800', color: COLORS.dark, marginBottom: 12 },
 
@@ -423,16 +603,31 @@ const styles = StyleSheet.create({
 
   // Photo
   preview: { width: '100%', height: 200, borderRadius: 10, marginBottom: 10 },
+=======
+  container:    { flex: 1, backgroundColor: COLORS.light, padding: 16 },
+  title:        { fontSize: 22, fontWeight: '800', color: COLORS.dark, marginBottom: 12 },
+  sectionLabel: { fontWeight: '700', color: COLORS.dark, marginBottom: 10, fontSize: 14 },
+
+  // Photo
+  preview: {
+    width: '100%',
+    height: 280,
+    borderRadius: 10,
+    marginBottom: 12,
+    backgroundColor: '#f3f4f6',
+  },
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
   photoPlaceholder: {
-    width: '100%', height: 150, borderRadius: 10, backgroundColor: COLORS.light,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 10,
+    width: '100%', height: 200, borderRadius: 10,
+    backgroundColor: COLORS.light, alignItems: 'center',
+    justifyContent: 'center', marginBottom: 12,
     borderWidth: 2, borderColor: COLORS.border, borderStyle: 'dashed',
   },
-  placeholderText: { color: COLORS.gray },
-  photoActions: { flexDirection: 'row', gap: 10 },
-  photoBtn: { flex: 1, padding: 10, borderRadius: 8, alignItems: 'center' },
-  photoBtnText: { color: '#fff', fontWeight: '600' },
+  placeholderIcon: { fontSize: 36, marginBottom: 8 },
+  placeholderText: { color: COLORS.dark, fontWeight: '600', fontSize: 14 },
+  placeholderSub:  { color: COLORS.gray, fontSize: 12, marginTop: 4 },
 
+<<<<<<< HEAD
   // Category
   sectionLabel: { fontWeight: '700', color: COLORS.dark, marginBottom: 6, fontSize: 14 },
   selectionHint: { fontSize: 12, color: COLORS.primary, fontWeight: '600', marginBottom: 10 },
@@ -485,4 +680,90 @@ const styles = StyleSheet.create({
   // Submit
   submitBtn: { marginTop: 8 },
   submitBtnDisabled: { opacity: 0.7 },
+=======
+  // Shared 2-column layout
+  twoCol: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  colBtn: {
+    flex: 1,
+    minWidth: '45%',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  colBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+
+  // Category chips (same twoCol layout)
+  catChip: {
+    flex: 1,
+    minWidth: '45%',
+    padding: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: COLORS.light,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+  },
+  catChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  catIcon:  { fontSize: 26 },
+  catLabel: { marginTop: 6, fontWeight: '600', color: COLORS.dark, fontSize: 13 },
+
+  // Location
+  locBadge: {
+    backgroundColor: '#f0fdf4', borderRadius: 8,
+    padding: 10, marginBottom: 4,
+    borderWidth: 1, borderColor: '#bbf7d0',
+  },
+  locBadgeText: { color: '#16a34a', fontWeight: '600', fontSize: 13 },
+  locEmpty:     { color: COLORS.gray, fontSize: 13, marginBottom: 4 },
+
+  // Submit
+  submitBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 8,
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+});
+
+const modal = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  icon:  { fontSize: 56, marginBottom: 12 },
+  title: { fontSize: 22, fontWeight: '800', color: COLORS.dark, marginBottom: 10 },
+  body:  { fontSize: 14, color: COLORS.gray, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  btn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+  },
+  btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
 });

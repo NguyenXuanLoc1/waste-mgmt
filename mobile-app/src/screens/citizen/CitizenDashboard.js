@@ -158,21 +158,25 @@ export default function CitizenDashboard({ navigation }) {
         </TouchableOpacity>
       </View>
 
+<<<<<<< HEAD
       {/* Row 2 — info screens available to everyone including guests */}
+=======
+      {/* Row 2 — BỊ XÓA NHẦM, GIỜ ĐÃ KHÔI PHỤC */}
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
       <View style={styles.actions}>
         <TouchableOpacity
-          style={[styles.actionCard, { backgroundColor: '#8b5cf6' }]}
+          style={[styles.actionCard, { backgroundColor: '#8b5cf6' }]} // Màu tím siêu đẹp
           onPress={() => navigation.navigate('WasteSortingGuide')}
         >
           <Text style={styles.actionIcon}>♻️</Text>
           <Text style={styles.actionText}>Waste Sorting Guide</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.actionCard, { backgroundColor: '#f97316' }]}
+          style={[styles.actionCard, { backgroundColor: '#f97316' }]} // Màu cam nổi bật
           onPress={() => navigation.navigate('Regulations')}
         >
           <Text style={styles.actionIcon}>📢</Text>
-          <Text style={styles.actionText}>Regulations & Announcements</Text>
+          <Text style={styles.actionText}>Regulations</Text>
         </TouchableOpacity>
       </View>
 
@@ -238,8 +242,12 @@ const styles = StyleSheet.create({
   },
   actionIcon: { fontSize: 32 },
   actionText: { color: '#fff', fontWeight: '700', marginTop: 8, fontSize: 14, textAlign: 'center' },
+<<<<<<< HEAD
   guestActionNote: {
     color: 'rgba(255,255,255,0.7)', fontSize: 10,
     marginTop: 4, fontStyle: 'italic',
   },
 });
+=======
+});
+>>>>>>> 806cede266f41d1f806fba0cd09293974fcf847a
