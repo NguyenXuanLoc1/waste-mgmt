@@ -92,19 +92,19 @@ export default function AdminCitizens() {
   useEffect(() => { load(); }, []);
 
   const handleCalcFee = async (citizenId) => {
-    try {
-      const { data } = await calculateFee(citizenId);
-      Alert.alert(
-        `💰 Fee: ${data.citizen.name}`,
-        `Score: ${data.citizen.behaviorScore}\n` +
-        `Organic: ${data.weights.organic}kg\nRecyclable: ${data.weights.recyclable}kg\nHazardous: ${data.weights.hazardous}kg\n` +
-        `Base fee: $${data.baseFee}\nDiscount: ${data.discount}\nFinal fee: $${data.finalFee}`
-      );
-    } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Could not calculate');
+  try {
+    const { data } = await calculateFee(citizenId);
+    const msg = `💰 Fee: ${data.citizen.name}\nScore: ${data.citizen.behaviorScore}\nOrganic: ${data.weights.organic}kg\nRecyclable: ${data.weights.recyclable}kg\nHazardous: ${data.weights.hazardous}kg\nBase fee: $${data.baseFee}\nDiscount: ${data.discount}\nFinal fee: $${data.finalFee}`;
+    if (typeof window !== 'undefined') {
+      window.alert(msg);
+    } else {
+      Alert.alert('Fee Result', msg);
     }
-  };
-
+  } catch (err) {
+    Alert.alert('Error', err.response?.data?.message || 'Could not calculate');
+  }
+};
+``
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Citizens ({citizens.length})</Text>

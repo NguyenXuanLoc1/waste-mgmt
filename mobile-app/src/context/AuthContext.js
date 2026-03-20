@@ -20,22 +20,39 @@ const storage = {
   },
 };
 
+// The guest user object — role must be 'citizen' so RoleNavigator
+// routes them into the citizen stack, isGuest flag drives UI changes.
+const GUEST_USER = {
+  id: null,
+  name: 'Guest',
+  email: null,
+  role: 'citizen',
+  behaviorScore: null,
+  isGuest: true,
+};
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Restore persisted session on app start (guests are never persisted)
   useEffect(() => {
     (async () => {
       try {
         const stored = await storage.getItem('user');
-        if (stored) setUser(JSON.parse(stored));
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          // Never restore a guest from storage — guests always start fresh
+          if (!parsed?.isGuest) setUser(parsed);
+        }
       } catch {}
       setLoading(false);
     })();
   }, []);
 
+  // ── Normal login ──────────────────────────────────────────────────────
   const login = async (email, password) => {
     const { data } = await apiLogin({ email, password });
     await storage.setItem('token', data.token);
@@ -44,6 +61,7 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
+  // ── Register ──────────────────────────────────────────────────────────
   const register = async (name, email, password) => {
     const { data } = await apiRegister({ name, email, password });
     await storage.setItem('token', data.token);
@@ -52,14 +70,24 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
+  // ── Guest login — no network call, no storage ─────────────────────────
+  const loginAsGuest = () => {
+    setUser(GUEST_USER);
+    // Intentionally do NOT persist guest to storage
+  };
+
+  // ── Logout — works for both real users and guests ─────────────────────
   const logout = async () => {
     await storage.deleteItem('token');
     await storage.deleteItem('user');
     setUser(null);
   };
 
+  // Convenience boolean readable anywhere in the app
+  const isGuest = user?.isGuest === true;
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, isGuest, login, register, loginAsGuest, logout }}>
       {children}
     </AuthContext.Provider>
   );
