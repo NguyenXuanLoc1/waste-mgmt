@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity,
+  TouchableOpacity, Platform,
 } from 'react-native';
+import { Video } from 'expo-av'; 
 import { COLORS, Card } from '../../components/UI';
 
 const GUIDE_DATA = [
@@ -57,7 +58,7 @@ const GUIDE_DATA = [
 ];
 
 function GuideCard({ item }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = React.useState(false);
 
   return (
     <TouchableOpacity
@@ -65,7 +66,6 @@ function GuideCard({ item }) {
       onPress={() => setExpanded((v) => !v)}
       style={[styles.guideCard, { backgroundColor: item.bg, borderColor: item.border }]}
     >
-      {/* Header row */}
       <View style={styles.cardHeader}>
         <View style={[styles.iconCircle, { backgroundColor: item.color }]}>
           <Text style={styles.iconText}>{item.icon}</Text>
@@ -79,11 +79,9 @@ function GuideCard({ item }) {
         <Text style={[styles.chevron, { color: item.color }]}>{expanded ? '▲' : '▼'}</Text>
       </View>
 
-      {/* Expanded detail */}
       {expanded && (
         <View style={styles.cardBody}>
           <View style={[styles.divider, { backgroundColor: item.border }]} />
-
           <Text style={[styles.bodyHeading, { color: item.color }]}>📦 Examples</Text>
           {item.examples.map((ex, i) => (
             <View key={i} style={styles.bulletRow}>
@@ -91,18 +89,74 @@ function GuideCard({ item }) {
               <Text style={styles.bulletText}>{ex}</Text>
             </View>
           ))}
-
           <View style={[styles.tipBox, { borderLeftColor: item.color }]}>
             <Text style={styles.tipHeading}>💡 Tips</Text>
             <Text style={styles.tipText}>{item.tips}</Text>
           </View>
-
           <View style={styles.doNotBox}>
             <Text style={styles.doNotText}>🚫 {item.doNot}</Text>
           </View>
         </View>
       )}
     </TouchableOpacity>
+  );
+}
+
+// =========================================================
+// 🎥 PHẦN VIDEO: CĂN GIỮA, ĐẦY ĐỦ VIDEO, KHUNG 3 PHẦN
+// =========================================================
+function GuideVideoPlayer() {
+  const videoRef = useRef(null);
+
+  // Phím tắt F: Phóng to thu nhỏ
+  useEffect(() => {
+    if (Platform.OS !== 'web') return; 
+    const handleKeyPress = async (event) => {
+      if ((event.key === 'f' || event.key === 'F') && videoRef.current) {
+        event.preventDefault(); 
+        try {
+          if (document.fullscreenElement) {
+            await document.exitFullscreen();
+          } else {
+            await videoRef.current.presentFullscreenPlayer();
+          }
+        } catch (e) {
+          console.log("Fullscreen toggle error:", e);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
+  return (
+    <View style={styles.videoCard}>
+      {/* Khúc 1: Header xám */}
+      <View style={styles.videoHeader}>
+        <Text style={styles.videoTitle}>🎥 Video Hướng Dẫn</Text>
+      </View>
+      
+      {/* Khúc 2: Vùng chứa Video (Nền đen, Căn giữa) */}
+      <View style={styles.videoCenterContainer}>
+        <View style={styles.videoWrapper}>
+          <Video
+            ref={videoRef}
+            style={styles.videoPlayer}
+            source={require('../../../assets/waste-sorting.mp4')} 
+            useNativeControls={true} // Bật thanh điều khiển Youtube
+            resizeMode="contain"     // GIỮ ĐẦY ĐỦ 100% VIDEO KHÔNG BỊ CẮT
+            isLooping={false}
+          />
+        </View>
+      </View>
+
+      {/* Khúc 3: Footer xám trải dài */}
+      <View style={styles.videoFooter}>
+        <Text style={styles.videoCaption}>
+          Xem đoạn hoạt hình ngắn này để biết cách phân loại 3 loại rác cơ bản nhé!
+        </Text>
+      </View>
+    </View>
   );
 }
 
@@ -125,6 +179,9 @@ export default function WasteSortingGuideScreen() {
           🌟 Correctly sorting your waste improves your Behavior Score and reduces your collection fee!
         </Text>
       </View>
+
+      {/* Gọi Component Video */}
+      <GuideVideoPlayer />
 
       {/* Guide cards */}
       {GUIDE_DATA.map((item) => (
@@ -168,6 +225,65 @@ const styles = StyleSheet.create({
   },
   reminderText: { fontSize: 13, color: '#92400e', lineHeight: 19 },
 
+  // ===============================================
+  // STYLE CHO FORM VIDEO (KHÔNG BỊ LỆCH GÓC NỮA)
+  // ===============================================
+  videoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    overflow: 'hidden', // Gọt 4 góc
+  },
+  videoHeader: {
+    padding: 16,
+    backgroundColor: '#f8fafc', 
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    alignItems: 'center',
+  },
+  videoTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.dark,
+  },
+  videoCenterContainer: {
+    width: '100%',
+    backgroundColor: '#000', // Đáy đen bao phủ toàn bộ chiều ngang
+    alignItems: 'center',    // ÉP KHUNG VIDEO VÀO CHÍNH GIỮA
+    justifyContent: 'center',
+  },
+  videoWrapper: {
+    width: '100%',
+    maxWidth: 800,           // Không cho video to quá lố trên Desktop
+    aspectRatio: 16 / 9,     // Tỷ lệ khung hình 16:9
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoPlayer: {
+    width: '100%',
+    height: '100%', // Đảm bảo thẻ Video giãn hết cỡ trong Wrapper
+  },
+  videoFooter: {
+    padding: 16,
+    backgroundColor: '#f8fafc',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  videoCaption: {
+    fontSize: 13,
+    color: COLORS.gray,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+
+  // --- STYLE CHO THẺ HƯỚNG DẪN ---
   guideCard: {
     borderRadius: 14,
     borderWidth: 1.5,
