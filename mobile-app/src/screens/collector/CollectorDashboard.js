@@ -9,20 +9,29 @@ import { useAuth } from '../../context/AuthContext';
 
 const CATEGORY_ICONS = { organic: '🌿', recyclable: '♻️', hazardous: '☢️', other: '🗑️' };
 
+// wasteCategory là Array — format thành "🌿 Organic / ♻️ Recyclable"
+const formatCategories = (cats) => {
+  if (!cats) return '🗑️ Unknown';
+  const arr = Array.isArray(cats) ? cats : [cats];
+  return arr
+    .map((c) => `${CATEGORY_ICONS[c?.toLowerCase()] || '🗑️'} ${c}`)
+    .join(' / ');
+};
+
 function WeightModal({ report, visible, onClose, onSubmit }) {
-  const [organic, setOrganic] = useState('0');
+  const [organic, setOrganic]       = useState('0');
   const [recyclable, setRecyclable] = useState('0');
-  const [hazardous, setHazardous] = useState('0');
-  const [loading, setLoading] = useState(false);
+  const [hazardous, setHazardous]   = useState('0');
+  const [loading, setLoading]       = useState(false);
 
   const handleSubmit = async () => {
     setLoading(true);
     try {
       await submitWeight({
-        reportId: report._id,
-        organicWeight: parseFloat(organic) || 0,
+        reportId:         report._id,
+        organicWeight:    parseFloat(organic)    || 0,
         recyclableWeight: parseFloat(recyclable) || 0,
-        hazardousWeight: parseFloat(hazardous) || 0,
+        hazardousWeight:  parseFloat(hazardous)  || 0,
       });
       Alert.alert('✅ Collection recorded!', 'Report marked as completed.');
       onSubmit();
@@ -39,9 +48,9 @@ function WeightModal({ report, visible, onClose, onSubmit }) {
         <View style={styles.modalBox}>
           <Text style={styles.modalTitle}>⚖️ Enter Waste Weights (kg)</Text>
           {[
-            { label: '🌿 Organic', val: organic, set: setOrganic },
+            { label: '🌿 Organic',    val: organic,    set: setOrganic },
             { label: '♻️ Recyclable', val: recyclable, set: setRecyclable },
-            { label: '☢️ Hazardous', val: hazardous, set: setHazardous },
+            { label: '☢️ Hazardous',  val: hazardous,  set: setHazardous },
           ].map((f) => (
             <View key={f.label} style={styles.weightRow}>
               <Text style={styles.weightLabel}>{f.label}</Text>
@@ -70,7 +79,8 @@ function ReportItem({ report, onVerify, onCollect }) {
         <Image source={{ uri: report.photoUrl }} style={styles.thumb} />
         <View style={styles.info}>
           <Text style={styles.citizen}>👤 {report.citizenId?.name || 'Unknown'}</Text>
-          <Text style={styles.cat}>{CATEGORY_ICONS[report.wasteCategory]} {report.wasteCategory}</Text>
+          {/* FIX: format Array categories đúng cách */}
+          <Text style={styles.cat}>{formatCategories(report.wasteCategory)}</Text>
           <Badge label={report.status} />
           <Text style={styles.date}>{new Date(report.createdAt).toLocaleDateString()}</Text>
         </View>
@@ -93,8 +103,8 @@ function ReportItem({ report, onVerify, onCollect }) {
 
 export default function CollectorDashboard() {
   const { logout } = useAuth();
-  const [reports, setReports] = useState([]);
-  const [refreshing, setRefreshing] = useState(false);
+  const [reports, setReports]             = useState([]);
+  const [refreshing, setRefreshing]       = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
 
   const load = async () => {
@@ -165,7 +175,7 @@ const styles = StyleSheet.create({
   thumb: { width: 70, height: 70, borderRadius: 8, backgroundColor: COLORS.border },
   info: { flex: 1, gap: 3 },
   citizen: { fontWeight: '700', color: COLORS.dark },
-  cat: { fontSize: 13, color: COLORS.gray, textTransform: 'capitalize' },
+  cat: { fontSize: 13, color: COLORS.gray },
   date: { fontSize: 12, color: COLORS.gray },
   desc: { fontSize: 13, color: COLORS.gray, marginTop: 8 },
   loc: { fontSize: 12, color: COLORS.info, marginTop: 6 },

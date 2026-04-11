@@ -20,6 +20,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/citizen', citizenRoutes);
 app.use('/api/collector', collectorRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/payment', require('./routes/payment'));
+app.use('/api/fee',     require('./routes/fee'));
 
 app.get('/', (req, res) => res.json({ message: 'Waste Management API running' }));
 

@@ -4,6 +4,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 const WasteReport = require('../models/WasteReport');
 const User = require('../models/User');
 const CollectionRecord = require('../models/CollectionRecord');
+const Fee = require('../models/Fee');                          // ← THÊM MỚI
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs');
 const path = require('path');
@@ -70,12 +71,10 @@ router.post('/analyze-report', authenticate, authorize('admin'), async (req, res
     if (!report) return res.status(404).json({ message: 'Report not found' });
 
     let base64Image = "";
-    
-    // Đọc ảnh từ local hoặc internet
+
     if (report.photoUrl.includes('/uploads/')) {
       const filename = report.photoUrl.split('/uploads/')[1];
       const filePath = path.join(__dirname, '../uploads', filename);
-      
       if (!fs.existsSync(filePath)) {
         console.log(`❌ LỖI: Không tìm thấy file ảnh gốc tại: ${filePath}`);
         return res.status(400).json({ message: 'Không tìm thấy file ảnh' });
@@ -89,7 +88,6 @@ router.post('/analyze-report', authenticate, authorize('admin'), async (req, res
       console.log('✅ 1. Đã lấy được ảnh từ Internet.');
     }
 
-    // Yêu cầu AI phân tích rác và tính năng tái chế
     const prompt = `Bạn là chuyên gia phân loại rác thải. Hãy phân tích ảnh này.
     Loại rác do người dân khai báo là: "${report.wasteCategory}".
 
@@ -118,29 +116,21 @@ router.post('/analyze-report', authenticate, authorize('admin'), async (req, res
     const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
     const analysis = JSON.parse(jsonMatch ? jsonMatch[0] : cleanedText);
 
-    // Lưu kết quả phân tích vào báo cáo
     report.aiAnalysis = analysis;
 
-    // --- LOGIC TỰ ĐỘNG DUYỆT (AUTO-APPROVE) ---
     let autoApproved = false;
     if (analysis.isFake === false) {
-      // Nếu có rác thật -> Tự động chuyển trạng thái thành Verified
       report.status = 'verified';
       autoApproved = true;
-      
-      // Tự động cộng 10 điểm cho người dân
       await User.findByIdAndUpdate(report.citizenId, { $inc: { behaviorScore: 10 } });
       console.log('✅ 3. TỰ ĐỘNG DUYỆT: Ảnh hợp lệ, đã chuyển sang Verified và cộng 10 điểm cho người dân!');
     } else {
       console.log('⚠️ 3. CẦN ADMIN XEM XÉT: AI phát hiện ảnh Fake (không có rác), giữ nguyên trạng thái Pending.');
     }
 
-    // Lưu lại toàn bộ vào Database
     await report.save();
 
     console.log('🎉 4. HOÀN TẤT! Kết quả AI trả về:', analysis);
-    
-    // Trả về cho Frontend biết là đã tự động duyệt hay chưa
     res.json({ message: 'AI analysis complete', analysis, autoApproved, newStatus: report.status });
   } catch (err) {
     console.error('❌ LỖI GEMINI CUỐI CÙNG:', err.message);
@@ -189,10 +179,57 @@ router.post('/adjust-score', authenticate, authorize('admin'), async (req, res) 
   }
 });
 
+// ─────────────────────────────────────────────────────────────
+// GET /api/admin/citizens
+// Trả về danh sách citizen kèm fee mới nhất (amount + status)
+// ─────────────────────────────────────────────────────────────
 router.get('/citizens', authenticate, authorize('admin'), async (req, res) => {
   try {
-    const citizens = await User.find({ role: 'citizen' }).select('name email behaviorScore createdAt').sort({ behaviorScore: -1 }).lean();
-    res.json(citizens);
+    const citizens = await User.find({ role: 'citizen' })
+      .select('name email behaviorScore createdAt')
+      .sort({ behaviorScore: -1 })
+      .lean();
+
+    // Lấy fee mới nhất của từng citizen (1 query, group theo citizenId)
+    const fees = await Fee.aggregate([
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: '$citizenId',
+          latestFee: { $first: '$$ROOT' },
+        },
+      },
+    ]);
+
+    // Map citizenId → fee để tra nhanh
+    const feeMap = {};
+    fees.forEach((f) => {
+      feeMap[f._id.toString()] = f.latestFee;
+    });
+
+    const result = citizens.map((c) => {
+      const fee = feeMap[c._id.toString()];
+      return {
+        _id:           c._id,
+        name:          c.name,
+        email:         c.email,
+        behaviorScore: c.behaviorScore,
+        createdAt:     c.createdAt,
+        // Thông tin thanh toán — null nếu chưa có fee nào
+        fee: fee
+          ? {
+              feeId:      fee._id,
+              reportId:   fee.reportId,
+              amount:     fee.amountToPay,
+              status:     fee.status,       // 'unpaid' | 'paid'
+              kgOfTrash:  fee.kgOfTrash,
+              createdAt:  fee.createdAt,
+            }
+          : null,
+      };
+    });
+
+    res.json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -214,7 +251,13 @@ router.post('/calculate-fee', authenticate, authorize('admin'), async (req, res)
     const scoreBonus = Math.min((citizen.behaviorScore - 100) / 10 * 0.02, 0.3);
     const discount = scoreBonus > 0 ? scoreBonus : 0;
     const finalFee = Math.max(baseFee * (1 - discount), 0).toFixed(2);
-    res.json({ citizen: { name: citizen.name, behaviorScore: citizen.behaviorScore }, weights: { organic: totalOrganic, recyclable: totalRecyclable, hazardous: totalHazardous }, baseFee: baseFee.toFixed(2), discount: (discount * 100).toFixed(1) + '%', finalFee });
+    res.json({
+      citizen: { name: citizen.name, behaviorScore: citizen.behaviorScore },
+      weights: { organic: totalOrganic, recyclable: totalRecyclable, hazardous: totalHazardous },
+      baseFee: baseFee.toFixed(2),
+      discount: (discount * 100).toFixed(1) + '%',
+      finalFee,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

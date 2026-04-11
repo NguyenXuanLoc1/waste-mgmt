@@ -8,6 +8,13 @@ import { Card, Badge, COLORS } from '../../components/UI';
 
 const CATEGORY_ICONS = { organic: '🌿', recyclable: '♻️', hazardous: '☢️', other: '🗑️' };
 
+// wasteCategory là Array
+const formatCategories = (cats) => {
+  if (!cats) return '🗑️ Unknown';
+  const arr = Array.isArray(cats) ? cats : [cats];
+  return arr.map((c) => `${CATEGORY_ICONS[c?.toLowerCase()] || '🗑️'} ${c}`).join(' / ');
+};
+
 function ReportCard({ report }) {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -17,9 +24,7 @@ function ReportCard({ report }) {
           <Image source={{ uri: report.photoUrl }} style={styles.thumb} />
           <View style={styles.info}>
             <View style={styles.rowBetween}>
-              <Text style={styles.cat}>
-                {CATEGORY_ICONS[report.wasteCategory]} {report.wasteCategory}
-              </Text>
+              <Text style={styles.cat}>{formatCategories(report.wasteCategory)}</Text>
               <Badge label={report.status} />
             </View>
             <Text style={styles.date}>
@@ -102,7 +107,7 @@ const styles = StyleSheet.create({
   thumb: { width: 70, height: 70, borderRadius: 8, backgroundColor: COLORS.border },
   info: { flex: 1 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cat: { fontWeight: '700', color: COLORS.dark, fontSize: 14, textTransform: 'capitalize' },
+  cat: { fontWeight: '700', color: COLORS.dark, fontSize: 13, flex: 1, marginRight: 8 },
   date: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
   desc: { fontSize: 13, color: COLORS.gray, marginTop: 4 },
   details: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },

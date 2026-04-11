@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, RefreshControl,
   TouchableOpacity, Modal, Alert, TextInput,
 } from 'react-native';
-import { getCitizens, adjustScore, calculateFee } from '../../services/api';
+import { getCitizens, adjustScore } from '../../services/api';
 import { Card, Button, COLORS } from '../../components/UI';
 
 function ScoreModal({ citizen, visible, onClose, onDone }) {
@@ -51,10 +51,18 @@ function ScoreModal({ citizen, visible, onClose, onDone }) {
   );
 }
 
-function CitizenCard({ citizen, onAdjust, onCalcFee }) {
-  const scoreColor = citizen.behaviorScore >= 120 ? COLORS.primary : citizen.behaviorScore >= 80 ? COLORS.warning : COLORS.danger;
+function CitizenCard({ citizen, onAdjust }) {
+  const scoreColor =
+    citizen.behaviorScore >= 120 ? COLORS.primary
+    : citizen.behaviorScore >= 80 ? COLORS.warning
+    : COLORS.danger;
+
+  const fee = citizen.fee;
+  const isPaid = fee?.status === 'paid';
+
   return (
     <Card>
+      {/* ── Row 1: avatar / name / score ── */}
       <View style={styles.row}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{citizen.name.charAt(0).toUpperCase()}</Text>
@@ -68,9 +76,29 @@ function CitizenCard({ citizen, onAdjust, onCalcFee }) {
           <Text style={styles.scoreLbl}>pts</Text>
         </View>
       </View>
+
+      {/* ── Row 2: fee info ── */}
+      <View style={styles.feeRow}>
+        {fee ? (
+          <>
+            <Text style={styles.feeAmount}>💰 ${fee.amount?.toFixed(2)}</Text>
+            <View style={[styles.statusBadge, isPaid ? styles.badgePaid : styles.badgeUnpaid]}>
+              <Text style={styles.statusText}>{isPaid ? 'PAID' : 'UNPAID'}</Text>
+            </View>
+          </>
+        ) : (
+          <Text style={styles.feeNone}>No fee recorded</Text>
+        )}
+      </View>
+
+      {/* ── Row 3: actions ── */}
       <View style={styles.actRow}>
-        <Button title="⭐ Score" color={COLORS.info} onPress={() => onAdjust(citizen)} style={styles.actBtn} />
-        <Button title="💰 Calc Fee" color={COLORS.warning} onPress={() => onCalcFee(citizen._id)} style={styles.actBtn} />
+        <Button
+          title="⭐ Adjust Score"
+          color={COLORS.info}
+          onPress={() => onAdjust(citizen)}
+          style={styles.actBtn}
+        />
       </View>
     </Card>
   );
@@ -91,20 +119,6 @@ export default function AdminCitizens() {
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
   useEffect(() => { load(); }, []);
 
-  const handleCalcFee = async (citizenId) => {
-    try {
-      const { data } = await calculateFee(citizenId);
-      Alert.alert(
-        `💰 Fee: ${data.citizen.name}`,
-        `Score: ${data.citizen.behaviorScore}\n` +
-        `Organic: ${data.weights.organic}kg\nRecyclable: ${data.weights.recyclable}kg\nHazardous: ${data.weights.hazardous}kg\n` +
-        `Base fee: $${data.baseFee}\nDiscount: ${data.discount}\nFinal fee: $${data.finalFee}`
-      );
-    } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Could not calculate');
-    }
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Citizens ({citizens.length})</Text>
@@ -117,7 +131,6 @@ export default function AdminCitizens() {
           <CitizenCard
             citizen={item}
             onAdjust={(c) => setSelectedCitizen(c)}
-            onCalcFee={handleCalcFee}
           />
         )}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -143,6 +156,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.light, padding: 16 },
   title: { fontSize: 20, fontWeight: '800', color: COLORS.dark },
   sub: { fontSize: 13, color: COLORS.gray, marginBottom: 12 },
+
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary,
@@ -155,10 +169,29 @@ const styles = StyleSheet.create({
   scoreBadge: { padding: 8, borderRadius: 10, alignItems: 'center', minWidth: 50 },
   scoreText: { color: '#fff', fontWeight: '900', fontSize: 18 },
   scoreLbl: { color: '#fff', fontSize: 10 },
+
+  // ── Fee row ──
+  feeRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginTop: 10, paddingTop: 10,
+    borderTopWidth: 1, borderTopColor: COLORS.border,
+  },
+  feeAmount: { fontSize: 15, fontWeight: '700', color: COLORS.dark, flex: 1 },
+  feeNone: { fontSize: 13, color: COLORS.gray, fontStyle: 'italic' },
+  statusBadge: {
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: 20,
+  },
+  badgePaid:   { backgroundColor: COLORS.primary },
+  badgeUnpaid: { backgroundColor: COLORS.danger },
+  statusText:  { color: '#fff', fontWeight: '700', fontSize: 11 },
+
   actRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
   actBtn: { flex: 1, marginVertical: 0, padding: 10 },
+
   empty: { alignItems: 'center', marginTop: 60 },
   emptyText: { color: COLORS.gray, fontSize: 15 },
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalBox: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24 },
   modalTitle: { fontSize: 18, fontWeight: '800', color: COLORS.dark, marginBottom: 4 },
