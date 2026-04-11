@@ -22,6 +22,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/citizen', citizenRoutes);
 app.use('/api/collector', collectorRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Đã gộp các route từ cả 2 nhánh (payment, fee, events)
+app.use('/api/payment', require('./routes/payment'));
+app.use('/api/fee', require('./routes/fee'));
 app.use('/api/events', eventRoutes);
 
 app.get('/', (req, res) => res.json({ message: 'Waste Management API running' }));

@@ -1,32 +1,96 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  Modal, TouchableOpacity,
+  Modal, TouchableOpacity, TextInput
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import { Button, Input, COLORS } from '../../components/UI';
+// Loại bỏ Input vì mình sẽ tự build UI cho field, giữ lại Button và COLORS
+import { Button, COLORS } from '../../components/UI';
 import { seedUsers } from '../../services/api';
 
-// ── Field component defined OUTSIDE to prevent focus loss on re-render ────────
+// ── Field component tự build UI chuẩn giống Hình 2 & Có tính năng xem mật khẩu ──
 function Field({ label, value, onChangeText, placeholder, keyboardType, autoCapitalize, secureTextEntry, error }) {
+  // Trạng thái bật/tắt hiển thị mật khẩu (mặc định sẽ theo prop secureTextEntry truyền vào)
+  const [isSecure, setIsSecure] = useState(secureTextEntry);
+
   return (
-    <View style={{ marginBottom: 4 }}>
-      <Input
-        label={label}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        secureTextEntry={secureTextEntry}
-        style={error ? { borderColor: COLORS.danger, borderWidth: 1 } : {}}
-      />
+    <View style={{ marginBottom: 12 }}>
+      {/* Label */}
+      <Text style={fieldStyles.label}>{label}</Text>
+      
+      {/* Khung Input */}
+      <View style={[fieldStyles.inputContainer, error ? fieldStyles.inputError : null]}>
+        <TextInput
+          style={fieldStyles.input}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          secureTextEntry={isSecure}
+          placeholderTextColor="#94a3b8"
+        />
+        
+        {/* Nút con mắt chỉ hiện khi đây là trường nhập mật khẩu */}
+        {secureTextEntry && (
+          <TouchableOpacity 
+            style={fieldStyles.eyeBtn} 
+            onPress={() => setIsSecure(!isSecure)}
+            activeOpacity={0.7}
+          >
+            <Text style={fieldStyles.eyeIcon}>{isSecure ? '🐵' : '🙈'}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Dòng báo lỗi */}
       {error ? <Text style={fieldStyles.error}>⚠ {error}</Text> : null}
     </View>
   );
 }
+
 const fieldStyles = StyleSheet.create({
-  error: { color: COLORS.danger, fontSize: 12, marginTop: -6, marginBottom: 8, paddingHorizontal: 2 },
+  label: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: COLORS.dark || '#0f172a', 
+    marginBottom: 6,
+    marginLeft: 2
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border || '#cbd5e1',
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    minHeight: 50,
+    paddingHorizontal: 14,
+  },
+  inputError: { 
+    borderColor: COLORS.danger, 
+    backgroundColor: '#fff5f5' 
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.dark || '#0f172a',
+    paddingVertical: 12, // Đảm bảo text không bị cắt trên Android
+    outlineStyle: 'none',
+  },
+  eyeBtn: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  eyeIcon: {
+    fontSize: 18,
+  },
+  error: { 
+    color: COLORS.danger, 
+    fontSize: 12, 
+    marginTop: 6, 
+    paddingHorizontal: 4 
+  },
 });
 
 // ── Shared modal components ───────────────────────────────────────────────────
@@ -46,6 +110,7 @@ function InfoModal({ visible, icon, title, titleColor, body, btnColor, btnLabel,
     </Modal>
   );
 }
+
 const mStyles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   card:    { backgroundColor: '#fff', borderRadius: 20, padding: 32, alignItems: 'center', width: '100%', maxWidth: 400, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, elevation: 10 },
@@ -128,15 +193,19 @@ export default function LoginScreen({ navigation }) {
           autoCapitalize="none"
           error={errors.email}
         />
+        
         <Field
           label="Password"
           value={password}
           onChangeText={(v) => { setPassword(v); setErrors(p => ({ ...p, password: '' })); }}
           placeholder="••••••••"
-          secureTextEntry
+          secureTextEntry={true} // Bắt buộc truyền true để component biết đây là ô mật khẩu và hiện nút mắt
           error={errors.password}
         />
-        <Button title="Login" onPress={handleLogin} loading={loading} />
+        
+        <View style={{ marginTop: 8 }}>
+          <Button title="Login" onPress={handleLogin} loading={loading} />
+        </View>
 
         <TouchableOpacity style={styles.link} onPress={() => navigation.navigate('Register')}>
           <Text style={styles.linkText}>

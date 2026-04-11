@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, RefreshControl,
   TouchableOpacity, Modal, Alert, TextInput, ActivityIndicator,
 } from 'react-native';
+// Bổ sung calculateFee vào import để tránh lỗi khi gọi hàm handleCalcFee
 import { getCitizens, adjustScore, calculateFee } from '../../services/api';
 import { Card, Button, COLORS } from '../../components/UI';
 import api from '../../services/api';
@@ -115,7 +116,7 @@ function EditModal({ citizen, visible, onClose, onDone }) {
   const validate = () => {
     const e = { name: '', email: '', password: '' };
     let valid = true;
-    if (!name.trim())                         { e.name     = 'Please enter a name';                       valid = false; }
+    if (!name.trim())                         { e.name     = 'Please enter a name';                      valid = false; }
     else if (name.trim().length < 2)          { e.name     = 'Name must be at least 2 characters';        valid = false; }
     if (!email.trim())                        { e.email    = 'Please enter an email';                     valid = false; }
     else if (!EMAIL_REGEX.test(email.trim())) { e.email    = 'Please enter a valid email address';        valid = false; }
@@ -199,7 +200,7 @@ function EditModal({ citizen, visible, onClose, onDone }) {
   );
 }
 
-// ── ScoreModal (giữ nguyên logic, thay Alert bằng modal) ─────────────────────
+// ── ScoreModal ───────────────────────────────────────────────────────────────
 function ScoreModal({ citizen, visible, onClose, onDone }) {
   const [delta, setDelta]   = useState('');
   const [reason, setReason] = useState('');
@@ -209,7 +210,7 @@ function ScoreModal({ citizen, visible, onClose, onDone }) {
   const [errorMsg, setErrorMsg]       = useState('');
 
   const handleAdjust = async () => {
-    if (!delta) return; // field error handled inline below
+    if (!delta) return; 
     setLoading(true);
     try {
       await adjustScore(citizen._id, parseInt(delta), reason);
@@ -257,11 +258,16 @@ function ScoreModal({ citizen, visible, onClose, onDone }) {
   );
 }
 
-// ── CitizenCard (bổ sung 2 nút Edit + Delete) ─────────────────────────────────
+// ── CitizenCard (Đã gộp Fee và 4 nút Action) ──────────────────────────────────
 function CitizenCard({ citizen, onAdjust, onCalcFee, onEdit, onDelete }) {
   const scoreColor = citizen.behaviorScore >= 120 ? COLORS.primary : citizen.behaviorScore >= 80 ? COLORS.warning : COLORS.danger;
+  
+  const fee = citizen.fee;
+  const isPaid = fee?.status === 'paid';
+
   return (
     <Card>
+      {/* ── Row 1: avatar / name / score ── */}
       <View style={styles.row}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{citizen.name.charAt(0).toUpperCase()}</Text>
@@ -275,12 +281,28 @@ function CitizenCard({ citizen, onAdjust, onCalcFee, onEdit, onDelete }) {
           <Text style={styles.scoreLbl}>pts</Text>
         </View>
       </View>
-      {/* Hàng 1: Score + Calc Fee (giữ nguyên) */}
+
+      {/* ── Row 2: fee info ── */}
+      <View style={styles.feeRow}>
+        {fee ? (
+          <>
+            <Text style={styles.feeAmount}>💰 ${fee.amount?.toFixed(2)}</Text>
+            <View style={[styles.statusBadge, isPaid ? styles.badgePaid : styles.badgeUnpaid]}>
+              <Text style={styles.statusText}>{isPaid ? 'PAID' : 'UNPAID'}</Text>
+            </View>
+          </>
+        ) : (
+          <Text style={styles.feeNone}>No fee recorded</Text>
+        )}
+      </View>
+
+      {/* ── Row 3: actions 1 (Score + Calc Fee) ── */}
       <View style={styles.actRow}>
         <Button title="⭐ Score"    color={COLORS.info}    onPress={() => onAdjust(citizen)}      style={styles.actBtn} />
         <Button title="💰 Calc Fee" color={COLORS.warning} onPress={() => onCalcFee(citizen._id)} style={styles.actBtn} />
       </View>
-      {/* Hàng 2: Edit + Delete (mới) */}
+
+      {/* ── Row 4: actions 2 (Edit + Delete) ── */}
       <View style={styles.actRow}>
         <Button title="✏️ Edit"    color="#6366f1"       onPress={() => onEdit(citizen)}   style={styles.actBtn} />
         <Button title="🗑️ Delete" color={COLORS.danger}  onPress={() => onDelete(citizen)} style={styles.actBtn} />
@@ -362,7 +384,7 @@ export default function AdminCitizens() {
         contentContainerStyle={{ paddingBottom: 40 }}
       />
 
-      {/* Score Modal (cũ) */}
+      {/* Score Modal */}
       {selectedCitizen && (
         <ScoreModal
           citizen={selectedCitizen}
@@ -372,7 +394,7 @@ export default function AdminCitizens() {
         />
       )}
 
-      {/* Edit Modal (mới) */}
+      {/* Edit Modal */}
       {editCitizen && (
         <EditModal
           citizen={editCitizen}
@@ -382,7 +404,7 @@ export default function AdminCitizens() {
         />
       )}
 
-      {/* Confirm Delete Modal (mới) */}
+      {/* Confirm Delete Modal */}
       <ConfirmDeleteModal
         visible={!!deleteCitizenTarget}
         citizen={deleteCitizenTarget}
@@ -401,6 +423,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.light, padding: 16 },
   title: { fontSize: 20, fontWeight: '800', color: COLORS.dark },
   sub: { fontSize: 13, color: COLORS.gray, marginBottom: 12 },
+
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary,
@@ -413,10 +436,29 @@ const styles = StyleSheet.create({
   scoreBadge: { padding: 8, borderRadius: 10, alignItems: 'center', minWidth: 50 },
   scoreText: { color: '#fff', fontWeight: '900', fontSize: 18 },
   scoreLbl: { color: '#fff', fontSize: 10 },
-  actRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+
+  // ── Fee row ──
+  feeRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginTop: 10, paddingTop: 10,
+    borderTopWidth: 1, borderTopColor: COLORS.border,
+  },
+  feeAmount: { fontSize: 15, fontWeight: '700', color: COLORS.dark, flex: 1 },
+  feeNone: { fontSize: 13, color: COLORS.gray, fontStyle: 'italic' },
+  statusBadge: {
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: 20,
+  },
+  badgePaid:   { backgroundColor: COLORS.primary },
+  badgeUnpaid: { backgroundColor: COLORS.danger },
+  statusText:  { color: '#fff', fontWeight: '700', fontSize: 11 },
+
+  actRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
   actBtn: { flex: 1, marginVertical: 0, padding: 10 },
+
   empty: { alignItems: 'center', marginTop: 60 },
   emptyText: { color: COLORS.gray, fontSize: 15 },
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalBox: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24 },
   modalTitle: { fontSize: 18, fontWeight: '800', color: COLORS.dark, marginBottom: 4 },

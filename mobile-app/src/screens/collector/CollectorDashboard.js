@@ -9,6 +9,15 @@ import { useAuth } from '../../context/AuthContext';
 
 const CATEGORY_ICONS = { organic: '🌿', recyclable: '♻️', hazardous: '☢️', other: '🗑️' };
 
+// wasteCategory là Array — format thành "🌿 Organic / ♻️ Recyclable"
+const formatCategories = (cats) => {
+  if (!cats) return '🗑️ Unknown';
+  const arr = Array.isArray(cats) ? cats : [cats];
+  return arr
+    .map((c) => `${CATEGORY_ICONS[c?.toLowerCase()] || '🗑️'} ${c}`)
+    .join(' / ');
+};
+
 // ── Success Modal ─────────────────────────────────────────────────────────────
 function SuccessModal({ visible, title, body, onOk }) {
   return (
@@ -159,9 +168,8 @@ function ReportItem({ report, onVerify, onCollect }) {
         <Image source={{ uri: report.photoUrl }} style={styles.thumb} />
         <View style={styles.info}>
           <Text style={styles.citizen}>👤 {report.citizenId?.name || 'Unknown'}</Text>
-          <Text style={styles.cat}>
-            {CATEGORY_ICONS[report.wasteCategory]} {report.wasteCategory}
-          </Text>
+          {/* FIX: format Array categories đúng cách */}
+          <Text style={styles.cat}>{formatCategories(report.wasteCategory)}</Text>
           <Badge label={report.status} />
           <Text style={styles.date}>{new Date(report.createdAt).toLocaleDateString()}</Text>
         </View>
