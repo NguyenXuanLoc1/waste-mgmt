@@ -10,15 +10,25 @@ const fs   = require('fs');
 const path = require('path');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ── In-memory OTP store (mock — replace with Redis / SMS provider in prod) ──
-// Structure: { "<phone|email>": { code: "123456", expiresAt: Date } }
-const otpStore = new Map();
+// ── Helper: format user object nhất quán với auth.js ─────────────────────────
+// auth.js dùng formatUser trả về `id` (không phải `_id`).
+// Tất cả route trả user đều phải dùng hàm này để frontend không bị lệch.
+const formatUser = (user) => ({
+  id:            user._id,
+  name:          user.name,
+  email:         user.email,
+  role:          user.role,
+  behaviorScore: user.behaviorScore,
+  phone:         user.phone     || '',
+  avatarUrl:     user.avatarUrl || null,
+});
 
+// ── In-memory OTP store (mock — replace with Redis / SMS provider in prod) ──
+const otpStore = new Map();
 const generateOTP = () => String(Math.floor(100000 + Math.random() * 900000));
 
 // ============================================================
-// POST /api/citizen/send-otp   — (no auth, public endpoint)
-// Body: { contact: "<phone or email>" }
+// POST /api/citizen/send-otp
 // ============================================================
 router.post('/send-otp', async (req, res) => {
   try {
@@ -26,26 +36,18 @@ router.post('/send-otp', async (req, res) => {
     if (!contact) return res.status(400).json({ message: 'Phone or email is required' });
 
     const code = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     otpStore.set(contact.trim().toLowerCase(), { code, expiresAt });
 
-    // ── In production: call your SMS (Twilio) or email (SendGrid) provider here ──
-    // For now we log the code and return it in the response (dev / mock only).
     console.log(`📨 OTP for ${contact}: ${code}`);
-
-    res.json({
-      message: 'OTP sent successfully',
-      // REMOVE the "code" field in production — never expose OTP in response!
-      devCode: code,
-    });
+    res.json({ message: 'OTP sent successfully', devCode: code });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
 // ============================================================
-// POST /api/citizen/verify-otp   — (no auth, public endpoint)
-// Body: { contact: "<phone or email>", code: "123456" }
+// POST /api/citizen/verify-otp
 // ============================================================
 router.post('/verify-otp', async (req, res) => {
   try {
@@ -64,7 +66,6 @@ router.post('/verify-otp', async (req, res) => {
       return res.status(400).json({ message: 'Incorrect OTP. Please try again.' });
     }
 
-    // Valid — consume OTP
     otpStore.delete(key);
     res.json({ message: 'OTP verified successfully', verified: true });
   } catch (err) {
@@ -73,8 +74,7 @@ router.post('/verify-otp', async (req, res) => {
 });
 
 // ============================================================
-// POST /api/citizen/guest-report   — (no auth, public endpoint)
-// Accepts both regular FormData and guest fields.
+// POST /api/citizen/guest-report
 // ============================================================
 router.post(
   '/guest-report',
@@ -87,7 +87,6 @@ router.post(
         guestName, guestPhone, guestEmail, isVerified,
       } = req.body;
 
-      // ── Validation ──
       if (!req.file) return res.status(400).json({ message: 'Photo is required' });
       if (!guestName?.trim()) return res.status(400).json({ message: 'Guest name is required' });
       if (!guestPhone?.trim() && !guestEmail?.trim())
@@ -95,7 +94,6 @@ router.post(
       if (isVerified !== 'true')
         return res.status(400).json({ message: 'OTP verification required before submitting' });
 
-      // ── Parse multi-category ──
       const wasteCategory = wasteCategoryRaw
         ? wasteCategoryRaw.split(',').map((c) => c.trim()).filter(Boolean)
         : [];
@@ -104,7 +102,6 @@ router.post(
 
       const photoUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
 
-      // ── Save to DB ──
       const report = await WasteReport.create({
         citizenId:  null,
         isGuest:    true,
@@ -124,7 +121,6 @@ router.post(
 
       res.status(201).json({ message: 'Guest report submitted! AI is analyzing.', report });
 
-      // ── Background AI analysis (same as citizen route) ──
       const runAutoAI = async () => {
         try {
           console.log(`\n--- 🤖 [GUEST AUTO AI] ID: ${report._id} ---`);
@@ -155,7 +151,6 @@ router.post(
 
           const updatedReport = await WasteReport.findById(report._id);
           updatedReport.aiAnalysis = analysis;
-          // Guests don't accumulate behavior score — just set status
           updatedReport.status = analysis.isFake === false ? 'verified' : 'rejected';
           if (analysis.isFake !== false) {
             updatedReport.rejectionReason = 'AI Auto-Reject: Bức ảnh không chứa rác thải.';
@@ -175,7 +170,7 @@ router.post(
 );
 
 // ============================================================
-// POST /api/citizen/report   — authenticated citizen route
+// POST /api/citizen/report
 // ============================================================
 router.post(
   '/report',
@@ -280,7 +275,7 @@ router.get('/my-reports', authenticate, authorize('citizen'), async (req, res) =
 // ============================================================
 router.get('/my-score', authenticate, authorize('citizen'), async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('name email behaviorScore');
+    const user = await User.findById(req.user._id).select('name email phone avatarUrl behaviorScore');
     const reports = await WasteReport.find({ citizenId: req.user._id });
 
     const totalFee = reports.reduce((sum, r) => sum + (r.collectionFee || 0), 0);
@@ -296,5 +291,54 @@ router.get('/my-score', authenticate, authorize('citizen'), async (req, res) => 
     res.status(500).json({ message: err.message });
   }
 });
+
+// ============================================================
+// PUT /api/citizen/profile  — cập nhật tên, số điện thoại
+// ============================================================
+router.put('/profile', authenticate, async (req, res) => {
+  try {
+    const { name, phone } = req.body;
+    if (!name || !name.trim())
+      return res.status(400).json({ message: 'Name is required' });
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { name: name.trim(), phone: phone?.trim() || '' },
+      { new: true }
+    ).select('name email phone avatarUrl role behaviorScore');
+
+    // ✅ FIX: formatUser → trả `id` thay vì `_id`, nhất quán với auth.js
+    res.json({ message: 'Profile updated successfully', user: formatUser(user) });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ============================================================
+// POST /api/citizen/avatar  — upload ảnh đại diện
+// ============================================================
+router.post(
+  '/avatar',
+  authenticate,
+  upload.single('avatar'),
+  async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: 'No image uploaded' });
+
+      const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+      const user = await User.findByIdAndUpdate(
+        req.user._id,
+        { avatarUrl },
+        { new: true }
+      ).select('name email phone avatarUrl role behaviorScore');
+
+      // ✅ FIX: formatUser → trả `id` thay vì `_id`, nhất quán với auth.js
+      res.json({ message: 'Avatar updated successfully', user: formatUser(user) });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  }
+);
 
 module.exports = router;

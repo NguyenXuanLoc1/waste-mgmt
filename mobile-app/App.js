@@ -16,6 +16,7 @@ import SubmitReportScreen from './src/screens/citizen/SubmitReportScreen';
 import MyReportsScreen from './src/screens/citizen/MyReportsScreen';
 import WasteSortingGuideScreen from './src/screens/citizen/WasteSortingGuideScreen';
 import RegulationsScreen from './src/screens/citizen/RegulationsScreen';
+import ProfileScreen from './src/screens/citizen/ProfileScreen';         // ← của bạn
 
 // Collector screens
 import CollectorDashboard from './src/screens/collector/CollectorDashboard';
@@ -24,6 +25,8 @@ import CollectorDashboard from './src/screens/collector/CollectorDashboard';
 import AdminDashboard from './src/screens/admin/AdminDashboard';
 import AdminReports from './src/screens/admin/AdminReports';
 import AdminCitizens from './src/screens/admin/AdminCitizens';
+import AdminEvents from './src/screens/admin/AdminEvents';               // ← của main
+import AdminPostAnnouncement from './src/screens/admin/AdminPostAnnouncement'; // ← của bạn
 
 import { COLORS } from './src/components/UI';
 
@@ -57,34 +60,21 @@ function RoleNavigator() {
   }
 
   // Citizen Navigator — used by both real citizens AND guests.
-  // The isGuest flag drives conditional rendering inside each screen.
   if (user.role === 'citizen' || isGuest) {
     return (
       <Stack.Navigator screenOptions={headerOptions}>
+        <Stack.Screen name="CitizenDashboard" component={CitizenDashboard} options={{ title: '♻️ WasteMgmt' }} />
+        <Stack.Screen name="SubmitReport" component={SubmitReportScreen} options={{ title: 'Submit Report' }} />
+        <Stack.Screen name="MyReports" component={MyReportsScreen} options={{ title: 'My Reports' }} />
+        <Stack.Screen name="WasteSortingGuide" component={WasteSortingGuideScreen} options={{ title: '♻️ Waste Sorting Guide' }} />
+        <Stack.Screen name="Regulations" component={RegulationsScreen} options={{ title: '📢 Regulations & Announcements' }} />
         <Stack.Screen
-          name="CitizenDashboard"
-          component={CitizenDashboard}
-          options={{ title: '♻️ WasteMgmt' }}
-        />
-        <Stack.Screen
-          name="SubmitReport"
-          component={SubmitReportScreen}
-          options={{ title: 'Submit Report' }}
-        />
-        <Stack.Screen
-          name="MyReports"
-          component={MyReportsScreen}
-          options={{ title: 'My Reports' }}
-        />
-        <Stack.Screen
-          name="WasteSortingGuide"
-          component={WasteSortingGuideScreen}
-          options={{ title: '♻️ Waste Sorting Guide' }}
-        />
-        <Stack.Screen
-          name="Regulations"
-          component={RegulationsScreen}
-          options={{ title: '📢 Regulations & Announcements' }}
+          name="Profile"
+          component={ProfileScreen}
+          options={{
+            headerShown: false,
+            header: () => null,
+          }}
         />
       </Stack.Navigator>
     );
@@ -94,11 +84,7 @@ function RoleNavigator() {
   if (user.role === 'collector') {
     return (
       <Stack.Navigator screenOptions={headerOptions}>
-        <Stack.Screen
-          name="CollectorDashboard"
-          component={CollectorDashboard}
-          options={{ title: '🚛 Collector' }}
-        />
+        <Stack.Screen name="CollectorDashboard" component={CollectorDashboard} options={{ title: '🚛 Collector' }} />
       </Stack.Navigator>
     );
   }
@@ -107,21 +93,11 @@ function RoleNavigator() {
   if (user.role === 'admin') {
     return (
       <Stack.Navigator screenOptions={headerOptions}>
-        <Stack.Screen
-          name="AdminDashboard"
-          component={AdminDashboard}
-          options={{ title: '🛡️ Admin' }}
-        />
-        <Stack.Screen
-          name="AdminReports"
-          component={AdminReports}
-          options={{ title: 'All Reports' }}
-        />
-        <Stack.Screen
-          name="AdminCitizens"
-          component={AdminCitizens}
-          options={{ title: 'Citizens' }}
-        />
+        <Stack.Screen name="AdminDashboard" component={AdminDashboard} options={{ title: '🛡️ Admin' }} />
+        <Stack.Screen name="AdminReports" component={AdminReports} options={{ title: 'All Reports' }} />
+        <Stack.Screen name="AdminCitizens" component={AdminCitizens} options={{ title: 'Citizens' }} />
+        <Stack.Screen name="AdminEvents" component={AdminEvents} options={{ title: '🎉 Sự kiện' }} />
+        <Stack.Screen name="AdminPostAnnouncement" component={AdminPostAnnouncement} options={{ title: '📣 Post Announcement' }} />
       </Stack.Navigator>
     );
   }

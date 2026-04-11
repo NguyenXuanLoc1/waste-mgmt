@@ -12,7 +12,11 @@ const userSchema = new mongoose.Schema(
       default: 'citizen',
     },
     behaviorScore: { type: Number, default: 100 },
-    fcmToken: { type: String, default: null },
+    fcmToken:      { type: String, default: null },
+
+    // ── [MỚI] Thêm 2 field bị thiếu sau khi merge ────────────────────────────
+    phone:     { type: String, default: '' },      // số điện thoại
+    avatarUrl: { type: String, default: null },    // đường dẫn ảnh đại diện
   },
   { timestamps: true }
 );

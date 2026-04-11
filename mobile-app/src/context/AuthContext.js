@@ -83,11 +83,24 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // ── updateUser — cập nhật user trong state VÀ storage (dùng cho Profile) ──
+  const updateUser = async (updatedFields) => {
+    const newUser = { ...user, ...updatedFields };
+    setUser(newUser);
+    if (!newUser.isGuest) {
+      await storage.setItem('user', JSON.stringify(newUser));
+    }
+  };
+
   // Convenience boolean readable anywhere in the app
   const isGuest = user?.isGuest === true;
 
   return (
-    <AuthContext.Provider value={{ user, loading, isGuest, login, register, loginAsGuest, logout }}>
+    <AuthContext.Provider value={{
+      user, setUser, updateUser,
+      loading, isGuest,
+      login, register, loginAsGuest, logout,
+    }}>
       {children}
     </AuthContext.Provider>
   );
