@@ -72,8 +72,7 @@ export default function AdminDashboard({ navigation }) {
               <StatBox label="Rejected"      value={stats.rejected}     color={COLORS.danger}  icon="❌" />
               <StatBox label="Citizens"      value={stats.totalUsers}   color={COLORS.dark}    icon="👥" />
             </View>
-
-            <Text style={styles.sectionTitle}>Waste Collected (kg)</Text>
+<Text style={styles.sectionTitle}>Waste Collected (kg)</Text>
             <Card>
               {[
                 { label: '🌿 Organic',    val: stats.weights?.organic?.toFixed(1)    || 0, color: '#16a34a' },
@@ -94,9 +93,10 @@ export default function AdminDashboard({ navigation }) {
         <Text style={styles.sectionTitle}>Management</Text>
         <View style={styles.navGrid}>
           {[
-            { icon: '📋', label: 'All Reports',        screen: 'AdminReports',           color: COLORS.info },
-            { icon: '👥', label: 'Citizens',           screen: 'AdminCitizens',          color: '#8b5cf6' },
-            { icon: '📣', label: 'Post Announcement',  screen: 'AdminPostAnnouncement',  color: '#f97316' },
+            { icon: '📋', label: 'All Reports',       screen: 'AdminReports',          color: COLORS.info    },
+            { icon: '👥', label: 'Citizens',          screen: 'AdminCitizens',         color: '#8b5cf6'      },
+            { icon: '📣', label: 'Post Announcement', screen: 'AdminPostAnnouncement', color: '#f97316'      },
+            { icon: '🎉', label: 'Events',            screen: 'AdminEvents',           color: '#ec4899'      }, // ← MỚI
           ].map((item) => (
             <TouchableOpacity
               key={item.screen}
@@ -128,15 +128,15 @@ const styles = StyleSheet.create({
   statBox:      { width: '47%', padding: 16 },
   statIcon:     { fontSize: 24 },
   statVal:      { fontSize: 28, fontWeight: '900', marginTop: 4 },
-  statLabel:    { fontSize: 12, color: COLORS.gray, marginTop: 2 },
+statLabel:    { fontSize: 12, color: COLORS.gray, marginTop: 2 },
   weightRow:    { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   weightLabel:  { fontSize: 15, color: COLORS.dark },
   weightVal:    { fontSize: 15, fontWeight: '700' },
   navGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
   navCard:      {
-    width: '30%', backgroundColor: COLORS.white, borderRadius: 12, padding: 16,
+    width: '22%', backgroundColor: COLORS.white, borderRadius: 12, padding: 14,
     alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
   },
-  navIcon:      { fontSize: 30 },
-  navLabel:     { fontWeight: '700', color: COLORS.dark, marginTop: 8, fontSize: 12, textAlign: 'center' },
+  navIcon:  { fontSize: 28 },
+  navLabel: { fontWeight: '700', color: COLORS.dark, marginTop: 8, fontSize: 11, textAlign: 'center' },
 });
